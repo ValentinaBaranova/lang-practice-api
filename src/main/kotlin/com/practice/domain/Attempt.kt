@@ -22,8 +22,14 @@ class Attempt(
     @Column(name = "student_name")
     var studentName: String? = null,
 
-    var correctCount: Int? = null,
-    var totalCount: Int? = null,
+    @Column(name = "total_questions")
+    var totalQuestions: Int? = null,
+
+    @Column(name = "answered_questions")
+    var answeredQuestions: Int? = null,
+
+    @Column(name = "correct_answers")
+    var correctAnswers: Int? = null,
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
