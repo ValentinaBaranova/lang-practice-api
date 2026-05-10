@@ -22,6 +22,9 @@ class AttemptQuestion(
     @Column(name = "question_id", nullable = false)
     var questionId: String,
 
+    @Column(name = "answer", nullable = false)
+    var answer: String,
+
     @Column(name = "is_correct", nullable = false)
     var isCorrect: Boolean,
 

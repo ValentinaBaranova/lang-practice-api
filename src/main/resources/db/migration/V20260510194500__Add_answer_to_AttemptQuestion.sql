@@ -1,0 +1,1 @@
+ALTER TABLE attempt_question ADD COLUMN answer VARCHAR(255) NOT NULL;
