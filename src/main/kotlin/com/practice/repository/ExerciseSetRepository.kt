@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface ExerciseSetRepository : JpaRepository<ExerciseSet, UUID>
+interface ExerciseSetRepository : JpaRepository<ExerciseSet, UUID> {
+    fun findByShareSlug(shareSlug: String): ExerciseSet?
+}
