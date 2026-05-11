@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -36,8 +37,8 @@ class ExerciseSetController(
     }
 
     @GetMapping
-    fun listExerciseSets(): List<ExerciseSetResponse> {
-        return exerciseSetService.listExerciseSets()
+    fun listExerciseSets(@RequestParam(required = false) teacherId: UUID?): List<ExerciseSetResponse> {
+        return exerciseSetService.listExerciseSets(teacherId)
     }
 
     @PutMapping("/{id}")

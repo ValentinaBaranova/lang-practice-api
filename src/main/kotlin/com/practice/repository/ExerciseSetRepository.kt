@@ -8,4 +8,5 @@ import java.util.UUID
 @Repository
 interface ExerciseSetRepository : JpaRepository<ExerciseSet, UUID> {
     fun findByShareSlug(shareSlug: String): ExerciseSet?
+    fun findByTeacherId(teacherId: UUID): List<ExerciseSet>
 }
