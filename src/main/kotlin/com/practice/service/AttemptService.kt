@@ -41,8 +41,14 @@ class AttemptService(
         val attempt = attemptRepository.findById(attemptId)
             .orElseThrow { NoSuchElementException("Attempt not found with id: $attemptId") }
 
-        // TODO: Implement actual answer verification logic on the backend
-        val isCorrect = true
+        val exerciseSet = exerciseSetRepository.findById(attempt.exerciseSetId)
+            .orElseThrow { NoSuchElementException("Exercise set not found for attempt: $attemptId") }
+
+        val question = exerciseSet.questions.find { it.id == request.questionId }
+            .let { it ?: throw NoSuchElementException("Question not found with id: ${request.questionId}") }
+
+        // Basic verification: compare full sentence (case-insensitive and trimmed)
+        val isCorrect = question.correctAnswer.trim().equals(request.answer.trim(), ignoreCase = true)
 
         val attemptQuestion = AttemptQuestion(
             attemptId = attemptId,
