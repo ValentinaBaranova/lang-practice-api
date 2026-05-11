@@ -42,4 +42,9 @@ class AttemptController(
     fun getAttemptQuestions(@PathVariable id: UUID): List<AttemptQuestionResponse> {
         return attemptService.getAttemptQuestions(id)
     }
+
+    @GetMapping("/exercise-set/{exerciseSetId}")
+    fun getAttemptsByExerciseSetId(@PathVariable exerciseSetId: UUID): List<AttemptResponse> {
+        return attemptService.getAttemptsByExerciseSetId(exerciseSetId)
+    }
 }

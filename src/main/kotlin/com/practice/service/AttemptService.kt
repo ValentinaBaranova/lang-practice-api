@@ -76,6 +76,12 @@ class AttemptService(
             .map { it.toResponse() }
     }
 
+    @Transactional(readOnly = true)
+    fun getAttemptsByExerciseSetId(exerciseSetId: UUID): List<AttemptResponse> {
+        return attemptRepository.findAllByExerciseSetId(exerciseSetId)
+            .map { it.toResponse() }
+    }
+
     private fun Attempt.toResponse() = AttemptResponse(
         id = this.id!!,
         exerciseSetId = this.exerciseSetId,
