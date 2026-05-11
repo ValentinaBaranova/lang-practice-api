@@ -33,7 +33,7 @@ class ExerciseSet(
 
     @Type(JsonBinaryType::class)
     @Column(columnDefinition = "jsonb", nullable = false)
-    var questions: Map<String, Any>,
+    var questions: List<ExerciseQuestion>,
 
     @Column(name = "share_slug", unique = true)
     var shareSlug: String? = null,

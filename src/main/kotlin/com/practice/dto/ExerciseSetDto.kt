@@ -13,10 +13,18 @@ data class ExerciseSetResponse(
     val teacherName: String,
     val title: String,
     val type: ExerciseType,
-    val questions: Map<String, Any>,
+    val questions: List<ExerciseQuestion>,
     val shareSlug: String?,
     val createdAt: OffsetDateTime?,
     val updatedAt: OffsetDateTime?
+)
+
+data class ExerciseQuestion(
+    @field:NotBlank(message = "Prompt is required")
+    val prompt: String,
+
+    @field:NotBlank(message = "Correct answer is required")
+    val correctAnswer: String
 )
 
 data class ExerciseSetCreateRequest(
@@ -30,7 +38,7 @@ data class ExerciseSetCreateRequest(
     val type: ExerciseType,
 
     @field:NotEmpty(message = "Questions must contain at least one question")
-    val questions: Map<String, Any>
+    val questions: List<ExerciseQuestion>
 )
 
 data class ExerciseSetUpdateRequest(
@@ -38,5 +46,5 @@ data class ExerciseSetUpdateRequest(
     val title: String,
 
     @field:NotEmpty(message = "Questions must contain at least one question")
-    val questions: Map<String, Any>
+    val questions: List<ExerciseQuestion>
 )

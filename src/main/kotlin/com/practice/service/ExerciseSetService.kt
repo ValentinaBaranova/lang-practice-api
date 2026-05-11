@@ -1,6 +1,8 @@
 package com.practice.service
 
+import com.practice.domain.ExerciseQuestion
 import com.practice.domain.ExerciseSet
+import com.practice.dto.ExerciseQuestion as ExerciseQuestionDto
 import com.practice.dto.ExerciseSetCreateRequest
 import com.practice.dto.ExerciseSetResponse
 import com.practice.dto.ExerciseSetUpdateRequest
@@ -26,7 +28,7 @@ class ExerciseSetService(
             teacherId = request.teacherId,
             title = request.title,
             type = request.type,
-            questions = request.questions,
+            questions = request.questions.map { it.toDomain() },
             shareSlug = generateUniqueShareSlug()
         )
 
@@ -71,7 +73,7 @@ class ExerciseSetService(
             .orElseThrow { NoSuchElementException("Exercise set not found with id: $id") }
 
         exerciseSet.title = request.title
-        exerciseSet.questions = request.questions
+        exerciseSet.questions = request.questions.map { it.toDomain() }
 
         val saved = exerciseSetRepository.save(exerciseSet)
         val teacher = teacherRepository.findById(saved.teacherId)
@@ -98,9 +100,19 @@ class ExerciseSetService(
         teacherName = teacherName,
         title = this.title,
         type = this.type,
-        questions = this.questions,
+        questions = this.questions.map { it.toDto() },
         shareSlug = this.shareSlug,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt
+    )
+
+    private fun ExerciseQuestionDto.toDomain() = ExerciseQuestion(
+        prompt = this.prompt,
+        correctAnswer = this.correctAnswer
+    )
+
+    private fun ExerciseQuestion.toDto() = ExerciseQuestionDto(
+        prompt = this.prompt,
+        correctAnswer = this.correctAnswer
     )
 }
