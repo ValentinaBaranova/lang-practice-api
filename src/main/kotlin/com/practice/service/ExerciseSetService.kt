@@ -107,11 +107,13 @@ class ExerciseSetService(
     )
 
     private fun ExerciseQuestionDto.toDomain() = ExerciseQuestion(
+        id = this.id ?: UUID.randomUUID(),
         prompt = this.prompt,
         correctAnswer = this.correctAnswer
     )
 
     private fun ExerciseQuestion.toDto() = ExerciseQuestionDto(
+        id = this.id,
         prompt = this.prompt,
         correctAnswer = this.correctAnswer
     )

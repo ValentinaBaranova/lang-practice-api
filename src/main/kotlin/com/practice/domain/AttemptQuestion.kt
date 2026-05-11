@@ -20,7 +20,7 @@ class AttemptQuestion(
     var attemptId: UUID,
 
     @Column(name = "question_id", nullable = false)
-    var questionId: String,
+    var questionId: UUID,
 
     @Column(name = "answer", nullable = false)
     var answer: String,

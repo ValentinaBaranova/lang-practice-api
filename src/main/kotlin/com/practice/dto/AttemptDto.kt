@@ -22,8 +22,8 @@ data class AttemptCreateRequest(
 )
 
 data class QuestionAnswerRequest(
-    @field:NotBlank(message = "Question ID is required")
-    val questionId: String,
+    @field:NotNull(message = "Question ID is required")
+    val questionId: UUID,
 
     @field:NotBlank(message = "Answer is required")
     val answer: String
@@ -32,7 +32,7 @@ data class QuestionAnswerRequest(
 data class AttemptQuestionResponse(
     val id: UUID,
     val attemptId: UUID,
-    val questionId: String,
+    val questionId: UUID,
     val answer: String,
     val isCorrect: Boolean
 )

@@ -20,6 +20,8 @@ data class ExerciseSetResponse(
 )
 
 data class ExerciseQuestion(
+    val id: UUID? = null,
+
     @field:NotBlank(message = "Prompt is required")
     val prompt: String,
 
