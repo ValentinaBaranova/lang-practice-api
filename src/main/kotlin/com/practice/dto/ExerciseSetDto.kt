@@ -26,7 +26,10 @@ data class ExerciseQuestion(
     val prompt: String,
 
     @field:NotBlank(message = "Correct answer is required")
-    val correctAnswer: String
+    val correctAnswer: String,
+
+    @field:NotBlank(message = "Source text is required")
+    val sourceText: String
 )
 
 data class ExerciseSetCreateRequest(
@@ -39,14 +42,14 @@ data class ExerciseSetCreateRequest(
     @field:NotNull(message = "Type is required")
     val type: ExerciseType,
 
-    @field:NotEmpty(message = "Questions must contain at least one question")
-    val questions: List<ExerciseQuestion>
+    @field:NotBlank(message = "Bulk input is required")
+    val bulkInput: String
 )
 
 data class ExerciseSetUpdateRequest(
     @field:NotBlank(message = "Title is required")
     val title: String,
 
-    @field:NotEmpty(message = "Questions must contain at least one question")
-    val questions: List<ExerciseQuestion>
+    @field:NotBlank(message = "Bulk input is required")
+    val bulkInput: String
 )

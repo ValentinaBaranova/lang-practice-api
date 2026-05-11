@@ -28,7 +28,7 @@ class ExerciseSetService(
             teacherId = request.teacherId,
             title = request.title,
             type = request.type,
-            questions = request.questions.map { it.toDomain() },
+            questions = parseBulkInput(request.bulkInput),
             shareSlug = generateUniqueShareSlug()
         )
 
@@ -73,13 +73,37 @@ class ExerciseSetService(
             .orElseThrow { NoSuchElementException("Exercise set not found with id: $id") }
 
         exerciseSet.title = request.title
-        exerciseSet.questions = request.questions.map { it.toDomain() }
+        exerciseSet.questions = parseBulkInput(request.bulkInput)
 
         val saved = exerciseSetRepository.save(exerciseSet)
         val teacher = teacherRepository.findById(saved.teacherId)
             .orElseThrow { NoSuchElementException("Teacher not found with id: ${saved.teacherId}") }
         
         return saved.toResponse(teacher.name)
+    }
+
+    internal fun parseBulkInput(bulkInput: String): List<ExerciseQuestion> {
+        return bulkInput.lineSequence()
+            .filter { it.isNotBlank() }
+            .map { line ->
+                val sourceText = line.trim()
+                val regex = "\\[(.*?)]".toRegex()
+                val matches = regex.findAll(sourceText).toList()
+                
+                if (matches.isEmpty()) {
+                    throw IllegalArgumentException("Each line must contain at least one answer in []: $sourceText")
+                }
+
+                val prompt = sourceText.replace(regex, "___")
+                val correctAnswer = sourceText.replace("[", "").replace("]", "")
+
+                ExerciseQuestion(
+                    id = UUID.randomUUID(),
+                    prompt = prompt,
+                    correctAnswer = correctAnswer,
+                    sourceText = sourceText
+                )
+            }.toList()
     }
 
     private fun generateUniqueShareSlug(): String {
@@ -109,12 +133,14 @@ class ExerciseSetService(
     private fun ExerciseQuestionDto.toDomain() = ExerciseQuestion(
         id = this.id ?: UUID.randomUUID(),
         prompt = this.prompt,
-        correctAnswer = this.correctAnswer
+        correctAnswer = this.correctAnswer,
+        sourceText = this.sourceText
     )
 
     private fun ExerciseQuestion.toDto() = ExerciseQuestionDto(
         id = this.id,
         prompt = this.prompt,
-        correctAnswer = this.correctAnswer
+        correctAnswer = this.correctAnswer,
+        sourceText = this.sourceText
     )
 }
