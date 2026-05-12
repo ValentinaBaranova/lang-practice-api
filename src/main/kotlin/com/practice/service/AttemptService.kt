@@ -48,8 +48,15 @@ class AttemptService(
         val question = exerciseSet.questions.find { it.id == request.questionId }
             .let { it ?: throw NoSuchElementException("Question not found with id: ${request.questionId}") }
 
-        // Basic verification: compare full sentence (case-insensitive, trimmed, and accent-insensitive)
-        val isCorrect = normalize(question.correctAnswer).equals(normalize(request.answer), ignoreCase = true)
+        // Basic verification: compare full sentence or the specific word (case-insensitive, trimmed, and accent-insensitive)
+        val normalizedAnswer = normalize(request.answer)
+        val normalizedCorrectAnswer = normalize(question.correctAnswer)
+        val isCorrect = normalizedCorrectAnswer.equals(normalizedAnswer, ignoreCase = true) ||
+                normalize(question.sourceText
+                    .replace("[", "")
+                    .replace("]", "").
+                    replace(Regex("\\{.*?\\}"), ""))
+                    .equals(normalizedAnswer, ignoreCase = true)
 
         val attemptQuestion = AttemptQuestion(
             attemptId = attemptId,

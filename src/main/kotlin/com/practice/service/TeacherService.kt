@@ -1,6 +1,7 @@
 package com.practice.service
 
 import com.practice.domain.Teacher
+import com.practice.dto.TeacherCreateRequest
 import com.practice.dto.TeacherResponse
 import com.practice.repository.TeacherRepository
 import org.springframework.stereotype.Service
@@ -10,6 +11,14 @@ import org.springframework.transaction.annotation.Transactional
 class TeacherService(
     private val teacherRepository: TeacherRepository
 ) {
+    @Transactional
+    fun createTeacher(request: TeacherCreateRequest): TeacherResponse {
+        val teacher = Teacher(
+            name = request.name
+        )
+        return teacherRepository.save(teacher).toResponse()
+    }
+
     @Transactional(readOnly = true)
     fun getTeacherByAccessCode(accessCode: String): TeacherResponse {
         val teacher = teacherRepository.findByAccessCode(accessCode)
