@@ -1,8 +1,8 @@
 package com.practice.dto
 
 import com.practice.domain.ExerciseType
+import com.practice.domain.ExerciseVisibility
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -13,6 +13,7 @@ data class ExerciseSetResponse(
     val teacherName: String,
     val title: String,
     val type: ExerciseType,
+    val visibility: ExerciseVisibility,
     val questions: List<ExerciseQuestion>,
     val shareSlug: String?,
     val createdAt: OffsetDateTime?,
@@ -44,6 +45,8 @@ data class ExerciseSetCreateRequest(
     @field:NotNull(message = "Type is required")
     val type: ExerciseType,
 
+    val visibility: ExerciseVisibility = ExerciseVisibility.PRIVATE,
+
     @field:NotBlank(message = "Bulk input is required")
     val bulkInput: String
 )
@@ -51,6 +54,8 @@ data class ExerciseSetCreateRequest(
 data class ExerciseSetUpdateRequest(
     @field:NotBlank(message = "Title is required")
     val title: String,
+
+    val visibility: ExerciseVisibility = ExerciseVisibility.PRIVATE,
 
     @field:NotBlank(message = "Bulk input is required")
     val bulkInput: String

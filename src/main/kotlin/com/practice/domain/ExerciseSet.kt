@@ -31,6 +31,10 @@ class ExerciseSet(
     @Column(nullable = false)
     var type: ExerciseType,
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var visibility: ExerciseVisibility = ExerciseVisibility.PRIVATE,
+
     @Type(JsonBinaryType::class)
     @Column(columnDefinition = "jsonb", nullable = false)
     var questions: List<ExerciseQuestion>,

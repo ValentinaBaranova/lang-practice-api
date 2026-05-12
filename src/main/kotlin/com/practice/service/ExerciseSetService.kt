@@ -29,6 +29,7 @@ class ExerciseSetService(
             teacherId = request.teacherId,
             title = request.title,
             type = request.type,
+            visibility = request.visibility,
             questions = questions,
             shareSlug = generateUniqueShareSlug()
         )
@@ -68,12 +69,23 @@ class ExerciseSetService(
         return exerciseSets.map { it.toResponse(teacherNames[it.teacherId] ?: "Unknown") }
     }
 
+    @Transactional(readOnly = true)
+    fun listPublicExerciseSets(): List<ExerciseSetResponse> {
+        val exerciseSets = exerciseSetRepository.findByVisibilityOrderByCreatedAtDesc(com.practice.domain.ExerciseVisibility.PUBLIC)
+
+        val teacherNames = teacherRepository.findAllById(exerciseSets.map { it.teacherId }.distinct())
+            .associate { it.id to it.name }
+
+        return exerciseSets.map { it.toResponse(teacherNames[it.teacherId] ?: "Unknown") }
+    }
+
     @Transactional
     fun updateExerciseSet(id: UUID, request: ExerciseSetUpdateRequest): ExerciseSetResponse {
         val exerciseSet = exerciseSetRepository.findById(id)
             .orElseThrow { NoSuchElementException("Exercise set not found with id: $id") }
 
         exerciseSet.title = request.title
+        exerciseSet.visibility = request.visibility
         exerciseSet.questions = parseBulkInput(request.bulkInput, exerciseSet.type)
 
         val saved = exerciseSetRepository.save(exerciseSet)
@@ -158,6 +170,7 @@ class ExerciseSetService(
         teacherName = teacherName,
         title = this.title,
         type = this.type,
+        visibility = this.visibility,
         questions = this.questions.map { it.toDto() },
         shareSlug = this.shareSlug,
         createdAt = this.createdAt,

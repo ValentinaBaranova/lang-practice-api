@@ -36,6 +36,11 @@ class ExerciseSetController(
         return exerciseSetService.getExerciseSetByShareSlug(shareSlug)
     }
 
+    @GetMapping("/public")
+    fun listPublicExerciseSets(): List<ExerciseSetResponse> {
+        return exerciseSetService.listPublicExerciseSets()
+    }
+
     @GetMapping
     fun listExerciseSets(@RequestParam(required = false) teacherId: UUID?): List<ExerciseSetResponse> {
         return exerciseSetService.listExerciseSets(teacherId)
