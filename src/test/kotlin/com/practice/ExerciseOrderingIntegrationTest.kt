@@ -11,12 +11,13 @@ import java.util.UUID
 class ExerciseOrderingIntegrationTest : IntegrationTestBase() {
 
     private val defaultTeacherId = UUID.fromString("00000000-0000-0000-0000-000000000000")
+    private val defaultAccessCode = "DEFAULT001"
 
     @Test
     fun `exercise list should be ordered by createdAt descending`() {
         // 1. Create first exercise
         val request1 = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "First Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             bulkInput = "The [first] exercise."
@@ -33,7 +34,7 @@ class ExerciseOrderingIntegrationTest : IntegrationTestBase() {
 
         // 2. Create second exercise
         val request2 = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Second Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             bulkInput = "The [second] exercise."
@@ -43,7 +44,7 @@ class ExerciseOrderingIntegrationTest : IntegrationTestBase() {
         val exercise2 = response2.body!!
 
         // 3. Get list and verify order
-        val listResponse = restTemplate.getForEntity(url("/api/exercise-sets?teacherId=$defaultTeacherId"), Array<ExerciseSetResponse>::class.java)
+        val listResponse = restTemplate.getForEntity(url("/api/exercise-sets?accessCode=$defaultAccessCode"), Array<ExerciseSetResponse>::class.java)
         assertThat(listResponse.statusCode).isEqualTo(HttpStatus.OK)
         val list = listResponse.body!!
 

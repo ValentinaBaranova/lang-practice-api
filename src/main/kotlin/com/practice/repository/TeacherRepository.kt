@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface TeacherRepository : JpaRepository<Teacher, UUID>
+interface TeacherRepository : JpaRepository<Teacher, UUID> {
+    fun findByAccessCode(accessCode: String): Teacher?
+}

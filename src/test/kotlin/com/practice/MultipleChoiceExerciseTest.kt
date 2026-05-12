@@ -11,11 +11,12 @@ import java.util.UUID
 class MultipleChoiceExerciseTest : IntegrationTestBase() {
 
     private val defaultTeacherId = UUID.fromString("00000000-0000-0000-0000-000000000000")
+    private val defaultAccessCode = "DEFAULT001"
 
     @Test
     fun `should create and retrieve multiple choice exercise`() {
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Multiple Choice Test",
             type = ExerciseType.MULTIPLE_CHOICE,
             bulkInput = "Mañana ____ al cine. [iremos] {vamos|iremos|fuimos|íbamos}"
@@ -42,7 +43,7 @@ class MultipleChoiceExerciseTest : IntegrationTestBase() {
     @Test
     fun `should support multiple choice without explicit placeholder`() {
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Multiple Choice Test 2",
             type = ExerciseType.MULTIPLE_CHOICE,
             bulkInput = "How are you? [Fine] {Fine|Bad|Okay}"
@@ -61,7 +62,7 @@ class MultipleChoiceExerciseTest : IntegrationTestBase() {
     @Test
     fun `should fail if multiple choice exercise has less than 2 options`() {
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Invalid MC",
             type = ExerciseType.MULTIPLE_CHOICE,
             bulkInput = "Invalid [answer] {only-one}"
@@ -76,7 +77,7 @@ class MultipleChoiceExerciseTest : IntegrationTestBase() {
     @Test
     fun `should fail if multiple choice exercise options do not contain correct answer`() {
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Invalid MC",
             type = ExerciseType.MULTIPLE_CHOICE,
             bulkInput = "Invalid [answer] {option1|option2}"
@@ -91,7 +92,7 @@ class MultipleChoiceExerciseTest : IntegrationTestBase() {
     @Test
     fun `should fail if multiple choice exercise has multiple answers in one line`() {
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Invalid MC",
             type = ExerciseType.MULTIPLE_CHOICE,
             bulkInput = "Too many [answers] [here] {answers|here|none}"

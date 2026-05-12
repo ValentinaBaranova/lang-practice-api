@@ -10,17 +10,18 @@ import java.util.UUID
 class ExerciseFlowIntegrationTest : IntegrationTestBase() {
 
     private val defaultTeacherId = UUID.fromString("00000000-0000-0000-0000-000000000000")
+    private val defaultAccessCode = "DEFAULT001"
 
     @Test
     fun `teacher creates exercise and student submits correct answer`() {
         // 1. Get default teacher
-        val teacherResponse = restTemplate.getForEntity(url("/api/teachers/$defaultTeacherId"), TeacherResponse::class.java)
+        val teacherResponse = restTemplate.getForEntity(url("/api/teachers/$defaultAccessCode"), TeacherResponse::class.java)
         assertThat(teacherResponse.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(teacherResponse.body?.id).isEqualTo(defaultTeacherId)
+        assertThat(teacherResponse.body?.accessCode).isEqualTo(defaultAccessCode)
 
         // 2. Create ExerciseSet
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Test Exercise Set",
             type = ExerciseType.FILL_GAP_TEXT,
             bulkInput = """
@@ -72,7 +73,7 @@ class ExerciseFlowIntegrationTest : IntegrationTestBase() {
     fun `teacher creates exercise and student submits incorrect answer`() {
         // 1. Create ExerciseSet
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Test Exercise Set",
             type = ExerciseType.FILL_GAP_TEXT,
             bulkInput = "The [quick] brown fox."
@@ -111,7 +112,7 @@ class ExerciseFlowIntegrationTest : IntegrationTestBase() {
     @Test
     fun `add should return bad request when bulk input is empty`() {
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Test Exercise Set",
             type = ExerciseType.FILL_GAP_TEXT,
             bulkInput = ""

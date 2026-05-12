@@ -12,12 +12,13 @@ import java.util.UUID
 class ExerciseVisibilityIntegrationTest : IntegrationTestBase() {
 
     private val defaultTeacherId = UUID.fromString("00000000-0000-0000-0000-000000000000")
+    private val defaultAccessCode = "DEFAULT001"
 
     @Test
     fun `should only return public exercises in public endpoint`() {
         // 1. Create a private exercise
         val privateRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Private Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             visibility = ExerciseVisibility.PRIVATE,
@@ -29,7 +30,7 @@ class ExerciseVisibilityIntegrationTest : IntegrationTestBase() {
 
         // 2. Create a public exercise
         val publicRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Public Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             visibility = ExerciseVisibility.PUBLIC,
@@ -49,7 +50,7 @@ class ExerciseVisibilityIntegrationTest : IntegrationTestBase() {
         assertThat(publicList.any { it.id == privateExercise.id }).isFalse()
         
         // 5. Verify teacher list still shows both (or at least the teacher's ones)
-        val teacherListResponse = restTemplate.getForEntity(url("/api/exercise-sets?teacherId=$defaultTeacherId"), Array<ExerciseSetResponse>::class.java)
+        val teacherListResponse = restTemplate.getForEntity(url("/api/exercise-sets?accessCode=$defaultAccessCode"), Array<ExerciseSetResponse>::class.java)
         val teacherList = teacherListResponse.body!!
         assertThat(teacherList.any { it.id == publicExercise.id }).isTrue()
         assertThat(teacherList.any { it.id == privateExercise.id }).isTrue()

@@ -42,8 +42,8 @@ class ExerciseSetController(
     }
 
     @GetMapping
-    fun listExerciseSets(@RequestParam(required = false) teacherId: UUID?): List<ExerciseSetResponse> {
-        return exerciseSetService.listExerciseSets(teacherId)
+    fun listExerciseSets(@RequestParam(required = false) accessCode: String?): List<ExerciseSetResponse> {
+        return exerciseSetService.listExerciseSets(accessCode)
     }
 
     @PutMapping("/{id}")

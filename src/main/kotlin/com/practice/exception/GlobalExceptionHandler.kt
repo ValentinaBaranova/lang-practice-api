@@ -18,4 +18,13 @@ class GlobalExceptionHandler {
             )
         )
     }
+
+    @ExceptionHandler(NoSuchElementException::class)
+    fun handleNoSuchElementException(ex: NoSuchElementException): ResponseEntity<Map<String, Any>> {
+        return ResponseEntity.status(404).body(
+            mapOf(
+                "message" to (ex.message ?: "Resource not found")
+            )
+        )
+    }
 }

@@ -10,11 +10,12 @@ import java.util.UUID
 class ExerciseCreationErrorTest : IntegrationTestBase() {
 
     private val defaultTeacherId = UUID.fromString("00000000-0000-0000-0000-000000000000")
+    private val defaultAccessCode = "DEFAULT001"
 
     @Test
     fun `creating exercise with invalid bulk input should return clear error message`() {
         val createSetRequest = ExerciseSetCreateRequest(
-            teacherId = defaultTeacherId,
+            teacherAccessCode = defaultAccessCode,
             title = "Invalid Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             bulkInput = """

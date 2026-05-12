@@ -21,12 +21,12 @@ class ExerciseSetService(
 
     @Transactional
     fun createExerciseSet(request: ExerciseSetCreateRequest): ExerciseSetResponse {
-        val teacher = teacherRepository.findById(request.teacherId)
-            .orElseThrow { NoSuchElementException("Teacher not found with id: ${request.teacherId}") }
+        val teacher = teacherRepository.findByAccessCode(request.teacherAccessCode)
+            ?: throw NoSuchElementException("Teacher not found with accessCode: ${request.teacherAccessCode}")
 
         val questions = parseBulkInput(request.bulkInput, request.type)
         val exerciseSet = ExerciseSet(
-            teacherId = request.teacherId,
+            teacherId = teacher.id!!,
             title = request.title,
             type = request.type,
             visibility = request.visibility,
@@ -34,7 +34,7 @@ class ExerciseSetService(
             shareSlug = generateUniqueShareSlug()
         )
 
-        return exerciseSetRepository.save(exerciseSet).toResponse(teacher.name)
+        return exerciseSetRepository.save(exerciseSet).toResponse(teacher)
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +43,7 @@ class ExerciseSetService(
             .orElseThrow { NoSuchElementException("Exercise set not found with id: $id") }
         val teacher = teacherRepository.findById(exerciseSet.teacherId)
             .orElseThrow { NoSuchElementException("Teacher not found with id: ${exerciseSet.teacherId}") }
-        return exerciseSet.toResponse(teacher.name)
+        return exerciseSet.toResponse(teacher)
     }
 
     @Transactional(readOnly = true)
@@ -52,31 +52,39 @@ class ExerciseSetService(
             ?: throw NoSuchElementException("Exercise set not found with shareSlug: $shareSlug")
         val teacher = teacherRepository.findById(exerciseSet.teacherId)
             .orElseThrow { NoSuchElementException("Teacher not found with id: ${exerciseSet.teacherId}") }
-        return exerciseSet.toResponse(teacher.name)
+        return exerciseSet.toResponse(teacher)
     }
 
     @Transactional(readOnly = true)
-    fun listExerciseSets(teacherId: UUID? = null): List<ExerciseSetResponse> {
-        val exerciseSets = if (teacherId != null) {
-            exerciseSetRepository.findByTeacherIdOrderByCreatedAtDesc(teacherId)
+    fun listExerciseSets(accessCode: String? = null): List<ExerciseSetResponse> {
+        val exerciseSets = if (accessCode != null) {
+            val teacher = teacherRepository.findByAccessCode(accessCode)
+                ?: throw NoSuchElementException("Teacher not found with accessCode: $accessCode")
+            exerciseSetRepository.findByTeacherIdOrderByCreatedAtDesc(teacher.id!!)
         } else {
             exerciseSetRepository.findAllByOrderByCreatedAtDesc()
         }
         
-        val teacherNames = teacherRepository.findAllById(exerciseSets.map { it.teacherId }.distinct())
-            .associate { it.id to it.name }
+        val teachers = teacherRepository.findAllById(exerciseSets.map { it.teacherId }.distinct())
+            .associateBy { it.id }
 
-        return exerciseSets.map { it.toResponse(teacherNames[it.teacherId] ?: "Unknown") }
+        return exerciseSets.map { 
+            val teacher = teachers[it.teacherId] ?: throw NoSuchElementException("Teacher not found with id: ${it.teacherId}")
+            it.toResponse(teacher)
+        }
     }
 
     @Transactional(readOnly = true)
     fun listPublicExerciseSets(): List<ExerciseSetResponse> {
         val exerciseSets = exerciseSetRepository.findByVisibilityOrderByCreatedAtDesc(com.practice.domain.ExerciseVisibility.PUBLIC)
 
-        val teacherNames = teacherRepository.findAllById(exerciseSets.map { it.teacherId }.distinct())
-            .associate { it.id to it.name }
+        val teachers = teacherRepository.findAllById(exerciseSets.map { it.teacherId }.distinct())
+            .associateBy { it.id }
 
-        return exerciseSets.map { it.toResponse(teacherNames[it.teacherId] ?: "Unknown") }
+        return exerciseSets.map { 
+            val teacher = teachers[it.teacherId] ?: throw NoSuchElementException("Teacher not found with id: ${it.teacherId}")
+            it.toResponse(teacher)
+        }
     }
 
     @Transactional
@@ -92,7 +100,7 @@ class ExerciseSetService(
         val teacher = teacherRepository.findById(saved.teacherId)
             .orElseThrow { NoSuchElementException("Teacher not found with id: ${saved.teacherId}") }
         
-        return saved.toResponse(teacher.name)
+        return saved.toResponse(teacher)
     }
 
     internal fun parseBulkInput(bulkInput: String, type: com.practice.domain.ExerciseType): List<ExerciseQuestion> {
@@ -164,10 +172,10 @@ class ExerciseSetService(
         return slug
     }
 
-    private fun ExerciseSet.toResponse(teacherName: String) = ExerciseSetResponse(
+    private fun ExerciseSet.toResponse(teacher: com.practice.domain.Teacher) = ExerciseSetResponse(
         id = this.id!!,
-        teacherId = this.teacherId,
-        teacherName = teacherName,
+        teacherAccessCode = teacher.accessCode,
+        teacherName = teacher.name,
         title = this.title,
         type = this.type,
         visibility = this.visibility,
