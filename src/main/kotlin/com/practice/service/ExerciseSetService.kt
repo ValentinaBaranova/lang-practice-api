@@ -24,11 +24,12 @@ class ExerciseSetService(
         val teacher = teacherRepository.findById(request.teacherId)
             .orElseThrow { NoSuchElementException("Teacher not found with id: ${request.teacherId}") }
 
+        val questions = parseBulkInput(request.bulkInput, request.type)
         val exerciseSet = ExerciseSet(
             teacherId = request.teacherId,
             title = request.title,
             type = request.type,
-            questions = parseBulkInput(request.bulkInput),
+            questions = questions,
             shareSlug = generateUniqueShareSlug()
         )
 
@@ -73,7 +74,7 @@ class ExerciseSetService(
             .orElseThrow { NoSuchElementException("Exercise set not found with id: $id") }
 
         exerciseSet.title = request.title
-        exerciseSet.questions = parseBulkInput(request.bulkInput)
+        exerciseSet.questions = parseBulkInput(request.bulkInput, exerciseSet.type)
 
         val saved = exerciseSetRepository.save(exerciseSet)
         val teacher = teacherRepository.findById(saved.teacherId)
@@ -82,27 +83,50 @@ class ExerciseSetService(
         return saved.toResponse(teacher.name)
     }
 
-    internal fun parseBulkInput(bulkInput: String): List<ExerciseQuestion> {
+    internal fun parseBulkInput(bulkInput: String, type: com.practice.domain.ExerciseType): List<ExerciseQuestion> {
         val errors = mutableListOf<String>()
         val questions = bulkInput.lineSequence()
             .filter { it.isNotBlank() }
             .mapIndexed { index, line ->
                 val sourceText = line.trim()
-                val regex = "\\[(.*?)]".toRegex()
-                val matches = regex.findAll(sourceText).toList()
+                val answerRegex = "\\[(.*?)]".toRegex()
+                val optionsRegex = "\\{(.*?)}".toRegex()
                 
-                if (matches.isEmpty()) {
+                val answerMatch = answerRegex.find(sourceText)
+                
+                if (answerMatch == null) {
                     errors.add("Line ${index + 1}: Each line must contain at least one answer in []: $sourceText")
                     null
                 } else {
-                    val prompt = sourceText.replace(regex, "___")
-                    val correctAnswer = sourceText.replace("[", "").replace("]", "")
+                    val correctAnswer = answerMatch.groupValues[1]
+                    val optionsMatch = optionsRegex.find(sourceText)
+                    val options = optionsMatch?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
+
+                    var prompt = sourceText.replace(optionsRegex, "").trim()
+                    if (prompt.contains("___") || prompt.contains("____")) {
+                        prompt = prompt.replace(answerRegex, "").replace("\\s+".toRegex(), " ").trim()
+                    } else {
+                        prompt = prompt.replace(answerRegex, "___").trim()
+                    }
+
+                    if (type == com.practice.domain.ExerciseType.MULTIPLE_CHOICE) {
+                        if (answerRegex.findAll(sourceText).count() > 1) {
+                            errors.add("Line ${index + 1}: Multiple choice exercise must have exactly one answer in []: $sourceText")
+                        }
+                        if (options.size < 2) {
+                            errors.add("Line ${index + 1}: Multiple choice exercise must have at least 2 options in {}: $sourceText")
+                        }
+                        if (!options.contains(correctAnswer)) {
+                            errors.add("Line ${index + 1}: Options must contain the correct answer: $sourceText")
+                        }
+                    }
 
                     ExerciseQuestion(
                         id = UUID.randomUUID(),
                         prompt = prompt,
                         correctAnswer = correctAnswer,
-                        sourceText = sourceText
+                        sourceText = sourceText,
+                        options = options
                     )
                 }
             }
@@ -144,13 +168,15 @@ class ExerciseSetService(
         id = this.id ?: UUID.randomUUID(),
         prompt = this.prompt,
         correctAnswer = this.correctAnswer,
-        sourceText = this.sourceText
+        sourceText = this.sourceText,
+        options = this.options ?: emptyList()
     )
 
     private fun ExerciseQuestion.toDto() = ExerciseQuestionDto(
         id = this.id,
         prompt = this.prompt,
         correctAnswer = this.correctAnswer,
-        sourceText = this.sourceText
+        sourceText = this.sourceText,
+        options = if (this.options.isNotEmpty()) this.options else null
     )
 }

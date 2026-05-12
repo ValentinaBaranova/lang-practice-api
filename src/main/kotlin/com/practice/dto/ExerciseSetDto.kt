@@ -29,7 +29,9 @@ data class ExerciseQuestion(
     val correctAnswer: String,
 
     @field:NotBlank(message = "Source text is required")
-    val sourceText: String
+    val sourceText: String,
+
+    val options: List<String>? = null
 )
 
 data class ExerciseSetCreateRequest(
