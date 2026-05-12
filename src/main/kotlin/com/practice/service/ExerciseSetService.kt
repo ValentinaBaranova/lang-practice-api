@@ -83,27 +83,37 @@ class ExerciseSetService(
     }
 
     internal fun parseBulkInput(bulkInput: String): List<ExerciseQuestion> {
-        return bulkInput.lineSequence()
+        val errors = mutableListOf<String>()
+        val questions = bulkInput.lineSequence()
             .filter { it.isNotBlank() }
-            .map { line ->
+            .mapIndexed { index, line ->
                 val sourceText = line.trim()
                 val regex = "\\[(.*?)]".toRegex()
                 val matches = regex.findAll(sourceText).toList()
                 
                 if (matches.isEmpty()) {
-                    throw IllegalArgumentException("Each line must contain at least one answer in []: $sourceText")
+                    errors.add("Line ${index + 1}: Each line must contain at least one answer in []: $sourceText")
+                    null
+                } else {
+                    val prompt = sourceText.replace(regex, "___")
+                    val correctAnswer = sourceText.replace("[", "").replace("]", "")
+
+                    ExerciseQuestion(
+                        id = UUID.randomUUID(),
+                        prompt = prompt,
+                        correctAnswer = correctAnswer,
+                        sourceText = sourceText
+                    )
                 }
+            }
+            .filterNotNull()
+            .toList()
 
-                val prompt = sourceText.replace(regex, "___")
-                val correctAnswer = sourceText.replace("[", "").replace("]", "")
+        if (errors.isNotEmpty()) {
+            throw IllegalArgumentException(errors.joinToString("\n"))
+        }
 
-                ExerciseQuestion(
-                    id = UUID.randomUUID(),
-                    prompt = prompt,
-                    correctAnswer = correctAnswer,
-                    sourceText = sourceText
-                )
-            }.toList()
+        return questions
     }
 
     private fun generateUniqueShareSlug(): String {
