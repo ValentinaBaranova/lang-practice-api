@@ -56,9 +56,9 @@ class ExerciseSetService(
     @Transactional(readOnly = true)
     fun listExerciseSets(teacherId: UUID? = null): List<ExerciseSetResponse> {
         val exerciseSets = if (teacherId != null) {
-            exerciseSetRepository.findByTeacherId(teacherId)
+            exerciseSetRepository.findByTeacherIdOrderByCreatedAtDesc(teacherId)
         } else {
-            exerciseSetRepository.findAll()
+            exerciseSetRepository.findAllByOrderByCreatedAtDesc()
         }
         
         val teacherNames = teacherRepository.findAllById(exerciseSets.map { it.teacherId }.distinct())
