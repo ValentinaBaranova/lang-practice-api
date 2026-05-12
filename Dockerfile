@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for API (Kotlin + Spring Boot, Maven)
 # Build stage
-FROM maven:3.9.9-eclipse-temurin-17 AS build
+FROM maven:3.9.9-eclipse-temurin-22 AS build
 WORKDIR /workspace
 
 # Cache dependencies
@@ -12,7 +12,7 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package
 
 # Runtime stage
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:22-jre
 ENV APP_HOME=/app \
     JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0" \
     SERVER_PORT=8080 \
