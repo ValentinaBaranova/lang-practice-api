@@ -11,6 +11,7 @@ import com.practice.repository.AttemptRepository
 import com.practice.repository.ExerciseSetRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.text.Normalizer
 import java.util.UUID
 
 @Service
@@ -47,8 +48,8 @@ class AttemptService(
         val question = exerciseSet.questions.find { it.id == request.questionId }
             .let { it ?: throw NoSuchElementException("Question not found with id: ${request.questionId}") }
 
-        // Basic verification: compare full sentence (case-insensitive and trimmed)
-        val isCorrect = question.correctAnswer.trim().equals(request.answer.trim(), ignoreCase = true)
+        // Basic verification: compare full sentence (case-insensitive, trimmed, and accent-insensitive)
+        val isCorrect = normalize(question.correctAnswer).equals(normalize(request.answer), ignoreCase = true)
 
         val attemptQuestion = AttemptQuestion(
             attemptId = attemptId,
@@ -67,6 +68,11 @@ class AttemptService(
         attemptRepository.save(attempt)
 
         return savedQuestion.toResponse()
+    }
+
+    private fun normalize(text: String): String {
+        return Normalizer.normalize(text.trim(), Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
     }
 
     @Transactional(readOnly = true)
