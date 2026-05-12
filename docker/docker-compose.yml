@@ -9,7 +9,7 @@ services:
       POSTGRES_MULTIPLE_DATABASES: lang_practice
     volumes:
       - ./pg-init-scripts:/docker-entrypoint-initdb.d
-      - postgres:/Users/valentina.baranova/projects/lang-practice/api/docker/data/postgres-lang-practice
+      - postgres:/data/postgres-lang-practice
     ports:
       - "5432:5432"
     networks:
