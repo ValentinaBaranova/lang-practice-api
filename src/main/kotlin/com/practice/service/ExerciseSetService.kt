@@ -110,7 +110,7 @@ class ExerciseSetService(
             .mapIndexed { index, line ->
                 val sourceText = line.trim()
                 val answerRegex = "\\[(.*?)]".toRegex()
-                val optionsRegex = "\\{(.*?)}".toRegex()
+                val optionsRegex = "\\{+([^{}]*?)}".toRegex()
                 
                 val answerMatch = answerRegex.find(sourceText)
                 
@@ -122,7 +122,7 @@ class ExerciseSetService(
                     val optionsMatch = optionsRegex.find(sourceText)
                     val options = optionsMatch?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
 
-                    var prompt = sourceText.replace(optionsRegex, "").trim()
+                    var prompt = sourceText.replace(optionsRegex, "").replace("\\s+".toRegex(), " ").trim()
                     if (prompt.contains("___") || prompt.contains("____")) {
                         prompt = prompt.replace(answerRegex, "").replace("\\s+".toRegex(), " ").trim()
                     } else {
