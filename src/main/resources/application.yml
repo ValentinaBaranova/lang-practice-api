@@ -1,6 +1,13 @@
 spring:
   application:
     name: LangPractice
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: gpt-5-mini
+          temperature: 1
   datasource:
     url: jdbc:postgresql://localhost:5432/lang_practice
     username: postgres
