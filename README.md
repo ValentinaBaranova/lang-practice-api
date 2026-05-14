@@ -1,63 +1,106 @@
-# Language Practice
+# Language Practice API
 
-A lightweight web application for creating and completing language practice exercises.
+Backend API for the Language Practice application — a platform for creating and completing interactive Spanish grammar exercises.
 
-The project is focused on simple and fast teacher workflows:
+The API provides functionality for managing exercise sets, validating student answers, tracking attempts, and generating exercises with AI.
 
-* create an exercise set
-* share a public link with students
-* review student results
+---
 
-Students can complete exercises directly from a shared link without registration.
+## 💡 Why I Built This
 
-## Version 0.1 Scope
+I built this project while learning Spanish in Argentina.
 
-### Supported exercise type
+Most existing language practice websites either:
+- don't support Argentine Spanish well,
+- are uncomfortable for quick custom grammar practice,
+- or rely on AI chat interfaces that are not ideal for repetitive tense exercises.
 
-* Fill-the-gap text exercises
+I wanted a faster way to generate and practice focused grammar exercises, especially for Spanish verb tenses used in everyday Argentine Spanish.
 
-### Teacher features
+---
 
-* Create exercise sets
-* Edit exercise sets
-* View exercise sets list
-* Share public exercise links
-* View student results
+## 🌟 Features
 
-### Student features
+- REST API for exercise creation and management
+- Student exercise submission and scoring
+- AI-powered exercise generation with OpenAI
+- Support for multiple exercise formats
+- Public and private exercise flows
+- Validation and structured DTO-based API design
+- Multilingual-ready architecture
 
-* Open exercise by public link
-* Enter name before starting
-* Complete exercises
-* Receive immediate feedback
-* View final score
-* Retry exercises unlimited times
+---
 
-## Planned features
+## 🚀 Tech Stack
 
-* AI-assisted exercise generation using OpenAI
-* Multiple exercise types
-* Authentication
-* Multi-language UI (EN / ES / RU)
+- Kotlin
+- Spring Boot
+- PostgreSQL
+- Maven
+- JPA / Hibernate
+- OpenAI API
+- Docker
+- Testcontainers
 
-## Tech Stack
+---
 
-### Backend
+## ⚙️ Getting Started
 
-* Kotlin
-* Spring Boot
-* Maven
-* PostgreSQL
-* Flyway
+### 1. Installation
 
-### Frontend
+```bash
+git clone <repository-url>
+cd api
+```
 
-* Next.js
-* TypeScript
-* Ant Design
+### 2. Configuration
 
-## Architecture Notes
+Create an `.env` file or configure environment variables:
 
-* PostgreSQL JSONB is used for flexible question storage
-* UUIDs are used for entity identifiers
-* The initial version is intentionally simple and optimized for MVP development
+```properties
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/langpractice
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=postgres
+
+OPENAI_API_KEY=your_api_key
+```
+
+### 3. Run Application
+
+```bash
+./mvnw spring-boot:run
+```
+
+API will start on:
+
+```text
+http://localhost:8080
+```
+
+---
+
+## 🧪 Running Tests
+
+```bash
+./mvnw test
+```
+
+Integration tests use Testcontainers with PostgreSQL.
+
+---
+
+## 🏗 Architecture Notes
+
+- Layered architecture (controller → service → repository)
+- DTO-based API contracts
+- UUID-based entity identifiers
+- OpenAI integration isolated in dedicated service layer
+- Validation using Jakarta Validation
+- PostgreSQL persistence with Spring Data JPA
+- Integration testing with Testcontainers
+
+---
+
+## 📂 Related Repositories
+
+- [Web Frontend](https://github.com/ValentinaBaranova/lang-practice-web)
