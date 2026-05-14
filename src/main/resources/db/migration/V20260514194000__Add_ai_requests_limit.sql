@@ -1,0 +1,2 @@
+ALTER TABLE teacher ADD COLUMN ai_requests_count INTEGER DEFAULT 0 NOT NULL;
+ALTER TABLE teacher ADD COLUMN last_ai_request_at TIMESTAMP WITH TIME ZONE;

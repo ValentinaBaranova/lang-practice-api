@@ -18,7 +18,12 @@ class AiController(
 ) {
     @PostMapping("/generate")
     fun generate(@RequestBody request: AiGenerateRequest): AiGenerateResponse {
-        return aiService.generateExercise(request.type, request.topic, request.amount ?: 10)
+        return aiService.generateExercise(
+            type = request.type,
+            topic = request.topic,
+            amount = request.amount ?: 10,
+            teacherAccessCode = request.teacherAccessCode
+        )
     }
 
     @GetMapping("/build-exercise-prompt")

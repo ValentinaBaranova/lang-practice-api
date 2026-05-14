@@ -3,7 +3,8 @@ package com.practice.dto
 data class AiGenerateRequest(
     val type: String,
     val topic: String? = null,
-    val amount: Int? = 10
+    val amount: Int? = 10,
+    val teacherAccessCode: String
 )
 
 data class AiGenerateResponse(

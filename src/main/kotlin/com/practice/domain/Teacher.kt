@@ -30,7 +30,13 @@ class Teacher(
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    var updatedAt: OffsetDateTime? = null
+    var updatedAt: OffsetDateTime? = null,
+
+    @Column(name = "ai_requests_count", nullable = false)
+    var aiRequestsCount: Int = 0,
+
+    @Column(name = "last_ai_request_at")
+    var lastAiRequestAt: OffsetDateTime? = null
 ) {
     companion object {
         fun generateAccessCode(): String {
