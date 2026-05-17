@@ -6,8 +6,8 @@ spring:
       api-key: ${OPENAI_API_KEY:}
       chat:
         options:
-          model: gpt-5-mini
-          temperature: 1
+          model: gpt-4o-mini
+          temperature: 0.5
   datasource:
     url: jdbc:postgresql://localhost:5432/lang_practice
     username: postgres
@@ -27,3 +27,8 @@ application:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   ai:
     requests-limit: ${AI_REQUESTS_LIMIT:20}
+
+logging:
+  level:
+    org.springframework.ai: DEBUG
+    org.springframework.web.client: DEBUG
