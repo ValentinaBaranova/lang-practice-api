@@ -48,6 +48,10 @@ abstract class IntegrationTestBase {
 
             registry.add("spring.flyway.enabled") { true }
             registry.add("spring.flyway.locations") { "classpath:db/migration" }
+            
+            // Mock AI
+            registry.add("spring.ai.openai.api-key") { "mock" }
+            registry.add("spring.ai.openai.chat.options.model") { "gpt-4o-mini" }
         }
     }
 }

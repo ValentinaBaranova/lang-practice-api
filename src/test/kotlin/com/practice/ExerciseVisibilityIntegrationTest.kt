@@ -41,18 +41,23 @@ class ExerciseVisibilityIntegrationTest : IntegrationTestBase() {
         val publicExercise = publicResponse.body!!
 
         // 3. Get public exercises
-        val publicListResponse = restTemplate.getForEntity(url("/api/exercise-sets/public"), Array<ExerciseSetResponse>::class.java)
+        val publicListResponse = restTemplate.getForEntity(url("/api/exercise-sets/public"), Map::class.java)
         assertThat(publicListResponse.statusCode).isEqualTo(HttpStatus.OK)
-        val publicList = publicListResponse.body!!
-
+        val publicBody = publicListResponse.body!!
+        val publicContent = publicBody["content"] as List<Map<String, Any>>
+        
         // 4. Verify list
-        assertThat(publicList.any { it.id == publicExercise.id }).isTrue()
-        assertThat(publicList.any { it.id == privateExercise.id }).isFalse()
+        val publicItem = publicContent.find { it["id"] == publicExercise.id.toString() }
+        assertThat(publicItem).isNotNull
+        assertThat(publicItem!!["teacherName"]).isNull()
+        assertThat(publicItem["teacherAccessCode"]).isNull()
+        assertThat(publicContent.any { it["id"] == privateExercise.id.toString() }).isFalse()
         
         // 5. Verify teacher list still shows both (or at least the teacher's ones)
-        val teacherListResponse = restTemplate.getForEntity(url("/api/exercise-sets?accessCode=$defaultAccessCode"), Array<ExerciseSetResponse>::class.java)
-        val teacherList = teacherListResponse.body!!
-        assertThat(teacherList.any { it.id == publicExercise.id }).isTrue()
-        assertThat(teacherList.any { it.id == privateExercise.id }).isTrue()
+        val teacherListResponse = restTemplate.getForEntity(url("/api/exercise-sets?accessCode=$defaultAccessCode"), Map::class.java)
+        val teacherBody = teacherListResponse.body!!
+        val teacherContent = teacherBody["content"] as List<Map<String, Any>>
+        assertThat(teacherContent.any { it["id"] == publicExercise.id.toString() }).isTrue()
+        assertThat(teacherContent.any { it["id"] == privateExercise.id.toString() }).isTrue()
     }
 }

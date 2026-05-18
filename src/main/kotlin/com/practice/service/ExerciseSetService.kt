@@ -8,6 +8,8 @@ import com.practice.dto.ExerciseSetResponse
 import com.practice.dto.ExerciseSetUpdateRequest
 import com.practice.repository.ExerciseSetRepository
 import com.practice.repository.TeacherRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -56,35 +58,20 @@ class ExerciseSetService(
     }
 
     @Transactional(readOnly = true)
-    fun listExerciseSets(accessCode: String? = null): List<ExerciseSetResponse> {
-        val exerciseSets = if (accessCode != null) {
-            val teacher = teacherRepository.findByAccessCode(accessCode)
-                ?: throw NoSuchElementException("Teacher not found with accessCode: $accessCode")
-            exerciseSetRepository.findByTeacherIdOrderByCreatedAtDesc(teacher.id!!)
-        } else {
-            exerciseSetRepository.findAllByOrderByCreatedAtDesc()
-        }
+    fun listExerciseSets(accessCode: String, pageable: Pageable): Page<ExerciseSetResponse> {
+        val teacher = teacherRepository.findByAccessCode(accessCode)
+            ?: throw NoSuchElementException("Teacher not found with accessCode: $accessCode")
         
-        val teachers = teacherRepository.findAllById(exerciseSets.map { it.teacherId }.distinct())
-            .associateBy { it.id }
-
-        return exerciseSets.map { 
-            val teacher = teachers[it.teacherId] ?: throw NoSuchElementException("Teacher not found with id: ${it.teacherId}")
-            it.toResponse(teacher)
-        }
+        val exerciseSets = exerciseSetRepository.findByTeacherId(teacher.id!!, pageable)
+        
+        return exerciseSets.map { it.toResponse(teacher) }
     }
 
     @Transactional(readOnly = true)
-    fun listPublicExerciseSets(): List<ExerciseSetResponse> {
-        val exerciseSets = exerciseSetRepository.findByVisibilityOrderByCreatedAtDesc(com.practice.domain.ExerciseVisibility.PUBLIC)
+    fun listPublicExerciseSets(pageable: Pageable): Page<ExerciseSetResponse> {
+        val exerciseSets = exerciseSetRepository.findByVisibility(com.practice.domain.ExerciseVisibility.PUBLIC, pageable)
 
-        val teachers = teacherRepository.findAllById(exerciseSets.map { it.teacherId }.distinct())
-            .associateBy { it.id }
-
-        return exerciseSets.map { 
-            val teacher = teachers[it.teacherId] ?: throw NoSuchElementException("Teacher not found with id: ${it.teacherId}")
-            it.toResponse(teacher)
-        }
+        return exerciseSets.map { it.toResponse() }
     }
 
     @Transactional
@@ -172,10 +159,10 @@ class ExerciseSetService(
         return slug
     }
 
-    private fun ExerciseSet.toResponse(teacher: com.practice.domain.Teacher) = ExerciseSetResponse(
+    private fun ExerciseSet.toResponse(teacher: com.practice.domain.Teacher? = null) = ExerciseSetResponse(
         id = this.id!!,
-        teacherAccessCode = teacher.accessCode,
-        teacherName = teacher.name,
+        teacherAccessCode = teacher?.accessCode,
+        teacherName = teacher?.name,
         title = this.title,
         type = this.type,
         visibility = this.visibility,

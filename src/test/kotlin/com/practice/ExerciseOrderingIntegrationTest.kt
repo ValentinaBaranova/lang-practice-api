@@ -44,15 +44,16 @@ class ExerciseOrderingIntegrationTest : IntegrationTestBase() {
         val exercise2 = response2.body!!
 
         // 3. Get list and verify order
-        val listResponse = restTemplate.getForEntity(url("/api/exercise-sets?accessCode=$defaultAccessCode"), Array<ExerciseSetResponse>::class.java)
+        val listResponse = restTemplate.getForEntity(url("/api/exercise-sets?accessCode=$defaultAccessCode"), Map::class.java)
         assertThat(listResponse.statusCode).isEqualTo(HttpStatus.OK)
-        val list = listResponse.body!!
-
-        assertThat(list.size).isGreaterThanOrEqualTo(2)
+        val body = listResponse.body!!
+        val content = body["content"] as List<Map<String, Any>>
+        
+        assertThat(content.size).isGreaterThanOrEqualTo(2)
         
         // Find indices of our created exercises in the list
-        val index1 = list.indexOfFirst { it.id == exercise1.id }
-        val index2 = list.indexOfFirst { it.id == exercise2.id }
+        val index1 = content.indexOfFirst { it["id"] == exercise1.id.toString() }
+        val index2 = content.indexOfFirst { it["id"] == exercise2.id.toString() }
 
         assertThat(index1).isGreaterThan(-1)
         assertThat(index2).isGreaterThan(-1)
