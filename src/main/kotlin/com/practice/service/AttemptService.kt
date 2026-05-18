@@ -51,12 +51,13 @@ class AttemptService(
         // Basic verification: compare full sentence or the specific word (case-insensitive, trimmed, and accent-insensitive)
         val normalizedAnswer = normalize(request.answer)
         val normalizedCorrectAnswer = normalize(question.correctAnswer)
+        val normalizedSourceText = normalize(question.sourceText
+            .replace("[", "")
+            .replace("]", "")
+            .replace(Regex("\\{.*?\\}"), ""))
+
         val isCorrect = normalizedCorrectAnswer.equals(normalizedAnswer, ignoreCase = true) ||
-                normalize(question.sourceText
-                    .replace("[", "")
-                    .replace("]", "").
-                    replace(Regex("\\{.*?\\}"), ""))
-                    .equals(normalizedAnswer, ignoreCase = true)
+                normalizedSourceText.equals(normalizedAnswer, ignoreCase = true)
 
         val attemptQuestion = AttemptQuestion(
             attemptId = attemptId,
@@ -80,6 +81,7 @@ class AttemptService(
     private fun normalize(text: String): String {
         return Normalizer.normalize(text.trim(), Normalizer.Form.NFD)
             .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .replace("\\s+".toRegex(), " ")
     }
 
     @Transactional(readOnly = true)

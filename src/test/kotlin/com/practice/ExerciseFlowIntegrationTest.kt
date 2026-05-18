@@ -110,6 +110,44 @@ class ExerciseFlowIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `student submits answer with leading and trailing spaces`() {
+        // 1. Create ExerciseSet
+        val createSetRequest = ExerciseSetCreateRequest(
+            teacherAccessCode = defaultAccessCode,
+            title = "Test Exercise Set",
+            type = ExerciseType.FILL_GAP_TEXT,
+            bulkInput = "The [quick] brown fox."
+        )
+        val createSetResponse = restTemplate.postForEntity(url("/api/exercise-sets"), createSetRequest, ExerciseSetResponse::class.java)
+        val exerciseSet = createSetResponse.body!!
+
+        // 2. Create Attempt
+        val createAttemptRequest = AttemptCreateRequest(
+            exerciseSetId = exerciseSet.id,
+            studentName = "Space Student"
+        )
+        val createAttemptResponse = restTemplate.postForEntity(url("/api/attempts"), createAttemptRequest, AttemptResponse::class.java)
+        val attempt = createAttemptResponse.body!!
+
+        // 3. Submit answer with spaces for the gap "quick"
+        val questionId = exerciseSet.questions[0].id!!
+        val answerRequest1 = QuestionAnswerRequest(
+            questionId = questionId,
+            answer = " quick "
+        )
+        val response1 = restTemplate.postForEntity(url("/api/attempts/${attempt.id}/answers"), answerRequest1, AttemptQuestionResponse::class.java)
+        assertThat(response1.body?.isCorrect).isTrue()
+
+        // 4. Submit answer with spaces for the full sentence
+        val answerRequest2 = QuestionAnswerRequest(
+            questionId = questionId,
+            answer = "  The  quick  brown  fox.  "
+        )
+        val response2 = restTemplate.postForEntity(url("/api/attempts/${attempt.id}/answers"), answerRequest2, AttemptQuestionResponse::class.java)
+        assertThat(response2.body?.isCorrect).isTrue()
+    }
+
+    @Test
     fun `add should return bad request when bulk input is empty`() {
         val createSetRequest = ExerciseSetCreateRequest(
             teacherAccessCode = defaultAccessCode,

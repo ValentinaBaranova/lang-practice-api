@@ -123,15 +123,15 @@ class AttemptServiceTest : IntegrationTestBase() {
         // Given
         val teacherId = defaultTeacherId
         val questionId = UUID.randomUUID()
-        
+
         val question = ExerciseQuestion(id = questionId, prompt = "", correctAnswer = "ÁéÍóÚñ", sourceText = "")
         val exerciseSet = exerciseSetRepository.save(ExerciseSet(
-            teacherId = teacherId, 
-            title = "Accent Set", 
-            type = ExerciseType.FILL_GAP_TEXT, 
+            teacherId = teacherId,
+            title = "Accent Set",
+            type = ExerciseType.FILL_GAP_TEXT,
             questions = listOf(question)
         ))
-        
+
         val attempt = attemptRepository.save(Attempt(
             exerciseSetId = exerciseSet.id!!,
             studentName = "Student",
@@ -142,5 +142,33 @@ class AttemptServiceTest : IntegrationTestBase() {
 
         assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, "aeioun")).isCorrect)
         assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, "AEIOUN")).isCorrect)
+    }
+
+    @Test
+    fun `normalize should collapse multiple spaces`() {
+        val teacherId = defaultTeacherId
+        val questionId = UUID.randomUUID()
+        val question = ExerciseQuestion(
+            id = questionId,
+            prompt = "The quick brown fox.",
+            correctAnswer = "quick",
+            sourceText = "The [quick] brown fox."
+        )
+        val exerciseSet = exerciseSetRepository.save(ExerciseSet(
+            teacherId = teacherId,
+            title = "Space Set",
+            type = ExerciseType.FILL_GAP_TEXT,
+            questions = listOf(question)
+        ))
+        val attempt = attemptRepository.save(Attempt(
+            exerciseSetId = exerciseSet.id!!,
+            studentName = "Student",
+            totalQuestions = 1,
+            answeredQuestions = 0,
+            correctAnswers = 0
+        ))
+
+        assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, "  The  quick  brown  fox.  ")).isCorrect)
+        assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, "  quick  ")).isCorrect)
     }
 }
