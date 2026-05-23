@@ -34,9 +34,11 @@ class TelegramBotService(
 
     companion object {
         val TOPICS = listOf(
+            "Presente",
             "Pretérito Indefinido",
             "Pretérito Imperfecto",
             "Pretérito Perfecto",
+            "Futuro Simple",
             "Imperativo Argentino",
             "Subjuntivo Presente",
             "Ser vs Estar",
