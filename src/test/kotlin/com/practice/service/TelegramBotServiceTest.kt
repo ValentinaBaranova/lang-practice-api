@@ -70,4 +70,49 @@ class TelegramBotServiceTest : IntegrationTestBase() {
             it.text == "You are not currently subscribed." 
         })
     }
+
+    @Test
+    fun `test handleTopicSelectionOnly sets topic but not isSubscribed`() {
+        val chatId = 67890L
+        
+        doReturn(null).`when`(telegramBotService).execute(any<org.telegram.telegrambots.meta.api.methods.send.SendMessage>())
+
+        val update = mock(Update::class.java)
+        val callbackQuery = mock(org.telegram.telegrambots.meta.api.objects.CallbackQuery::class.java)
+        val message = mock(org.telegram.telegrambots.meta.api.objects.Message::class.java)
+        
+        `when`(update.hasCallbackQuery()).thenReturn(true)
+        `when`(update.callbackQuery).thenReturn(callbackQuery)
+        `when`(callbackQuery.data).thenReturn("set_topic:Ser vs Estar")
+        `when`(callbackQuery.message).thenReturn(message)
+        `when`(message.chatId).thenReturn(chatId)
+        
+        telegramBotService.onUpdateReceived(update)
+        
+        val updatedUser = telegramUserRepository.findByChatId(chatId)!!
+        assertThat(updatedUser.topic).isEqualTo("Ser vs Estar")
+        assertThat(updatedUser.isSubscribed).isFalse()
+    }
+    @Test
+    fun `test handleTopicSelection sets topic and isSubscribed`() {
+        val chatId = 13579L
+        
+        doReturn(null).`when`(telegramBotService).execute(any<org.telegram.telegrambots.meta.api.methods.send.SendMessage>())
+
+        val update = mock(Update::class.java)
+        val callbackQuery = mock(org.telegram.telegrambots.meta.api.objects.CallbackQuery::class.java)
+        val message = mock(org.telegram.telegrambots.meta.api.objects.Message::class.java)
+        
+        `when`(update.hasCallbackQuery()).thenReturn(true)
+        `when`(update.callbackQuery).thenReturn(callbackQuery)
+        `when`(callbackQuery.data).thenReturn("subscribe_topic:Por vs Para")
+        `when`(callbackQuery.message).thenReturn(message)
+        `when`(message.chatId).thenReturn(chatId)
+        
+        telegramBotService.onUpdateReceived(update)
+        
+        val updatedUser = telegramUserRepository.findByChatId(chatId)!!
+        assertThat(updatedUser.topic).isEqualTo("Por vs Para")
+        assertThat(updatedUser.isSubscribed).isTrue()
+    }
 }

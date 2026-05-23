@@ -57,15 +57,19 @@ class TelegramBotService(
                 messageText == "/subscribe" -> handleSubscribe(chatId)
                 messageText == "/unsubscribe" -> handleUnsubscribe(chatId)
                 messageText == "/practice" -> handlePractice(chatId)
+                messageText == "/topic" -> handleTopic(chatId)
                 else -> sendHelpMessage(chatId)
             }
         } else if (update.hasCallbackQuery()) {
             val callbackData = update.callbackQuery.data
             val chatId = update.callbackQuery.message.chatId
             
-            if (callbackData.startsWith("topic:")) {
-                val topic = callbackData.substringAfter("topic:")
+            if (callbackData.startsWith("subscribe_topic:")) {
+                val topic = callbackData.substringAfter("subscribe_topic:")
                 handleTopicSelection(chatId, topic)
+            } else if (callbackData.startsWith("set_topic:")) {
+                val topic = callbackData.substringAfter("set_topic:")
+                handleTopicSelectionOnly(chatId, topic)
             }
         }
     }
@@ -74,7 +78,7 @@ class TelegramBotService(
         val user = telegramUserRepository.findByChatId(chatId) ?: TelegramUser(chatId = chatId)
         telegramUserRepository.save(user)
         
-        sendMessage(chatId, "Welcome to Language Practice Bot! 🇦🇷\n\nI can send you daily exercises in Argentine Spanish.\nUse /subscribe to choose a topic or /practice to get an exercise right now.")
+        sendMessage(chatId, "Welcome to Language Practice Bot! 🇦🇷\n\nI can send you daily exercises in Argentine Spanish.\nUse /topic to set your preferred topic, /subscribe for daily exercises, or /practice to get an exercise right now.")
     }
 
     private fun handleSubscribe(chatId: Long) {
@@ -86,7 +90,7 @@ class TelegramBotService(
         val rows = TOPICS.map { topic ->
             val button = InlineKeyboardButton()
             button.text = topic
-            button.callbackData = "topic:$topic"
+            button.callbackData = "subscribe_topic:$topic"
             listOf(button)
         }
         markup.keyboard = rows
@@ -102,6 +106,32 @@ class TelegramBotService(
         telegramUserRepository.save(user)
         
         sendMessage(chatId, "Success! You are now subscribed to '$topic'. You will receive a new exercise once per day.\n\nYou can also practice right now using /practice")
+    }
+
+    private fun handleTopic(chatId: Long) {
+        val message = SendMessage()
+        message.chatId = chatId.toString()
+        message.text = "Choose your preferred topic for practice:"
+        
+        val markup = InlineKeyboardMarkup()
+        val rows = TOPICS.map { topic ->
+            val button = InlineKeyboardButton()
+            button.text = topic
+            button.callbackData = "set_topic:$topic"
+            listOf(button)
+        }
+        markup.keyboard = rows
+        message.replyMarkup = markup
+        
+        execute(message)
+    }
+
+    private fun handleTopicSelectionOnly(chatId: Long, topic: String) {
+        val user = telegramUserRepository.findByChatId(chatId) ?: TelegramUser(chatId = chatId)
+        user.topic = topic
+        telegramUserRepository.save(user)
+        
+        sendMessage(chatId, "Topic set to '$topic'. You can now use /practice to get an exercise on this topic.")
     }
 
     private fun handleUnsubscribe(chatId: Long) {
@@ -154,7 +184,7 @@ class TelegramBotService(
         return "$baseUrl/es/practice/${exerciseSet.shareSlug}"
     }
 
-    @Scheduled(cron = "0 0 9 * * *") // Every day at 9 AM
+    @Scheduled(cron = "\${scheduling.cron.send-daily-exercises:0 0 9 * * *}") // Configurable via application.yml; default: every day at 9 AM
     @Transactional
     fun sendDailyExercises() {
         val subscribers = telegramUserRepository.findByIsSubscribedTrue()
@@ -174,7 +204,7 @@ class TelegramBotService(
     }
 
     private fun sendHelpMessage(chatId: Long) {
-        sendMessage(chatId, "Available commands:\n/start - Start the bot\n/subscribe - Choose topic for daily exercises\n/unsubscribe - Stop daily exercises\n/practice - Practice immediately")
+        sendMessage(chatId, "Available commands:\n/start - Start the bot\n/topic - Set preferred topic\n/subscribe - Choose topic for daily exercises\n/unsubscribe - Stop daily exercises\n/practice - Practice immediately")
     }
 
     private fun sendMessage(chatId: Long, text: String) {

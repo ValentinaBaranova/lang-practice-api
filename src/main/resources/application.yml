@@ -29,6 +29,11 @@ application:
   ai:
     requests-limit: ${AI_REQUESTS_LIMIT:20}
 
+scheduling:
+  cron:
+    # Cron for Telegram daily exercises sender; overridable via env var SEND_DAILY_EXERCISES_CRON
+    send-daily-exercises: ${SEND_DAILY_EXERCISES_CRON:0 0 9 * * *}
+
 telegram:
   bot:
     token: ${TELEGRAM_BOT_TOKEN:fake}

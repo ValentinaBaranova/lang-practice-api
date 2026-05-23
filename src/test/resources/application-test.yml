@@ -1,4 +1,7 @@
 spring:
+  task:
+    scheduling:
+      enabled: false
   datasource:
     hikari:
       maximum-pool-size: 5
