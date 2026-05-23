@@ -145,7 +145,7 @@ class TelegramBotService(
         val request = ExerciseSetCreateRequest(
             title = "Daily Practice: $topic",
             type = ExerciseType.FILL_GAP_TEXT,
-            visibility = ExerciseVisibility.PUBLIC,
+            visibility = ExerciseVisibility.PRIVATE,
             bulkInput = aiResponse.content,
             teacherAccessCode = TEACHER_ACCESS_CODE
         )
