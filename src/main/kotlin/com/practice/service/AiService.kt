@@ -19,11 +19,13 @@ class AiService(
     private val aiRequestsLimit: Int
 ) {
     companion object {
+        private const val SYSTEM_MESSAGE = "You are a helpful assistant that generates Spanish language exercises."
+
         private const val BASE_PROMPT = """
             Generate [AMOUNT] sentences in Argentine Spanish about [TOPIC] for [PRACTICE_TYPE].
             Plain text, no empty lines. One sentence per line. Do not include line numbers.
             [FORMAT_INSTRUCTIONS]
-            Avoid forms where pronouns are attached directly to verbs.
+            If the answer requires a reflexive or object pronoun, include it in the hint.
             Focus on common everyday situations and Argentine vocabulary.
         """
 
@@ -57,22 +59,31 @@ class AiService(
         teacher.lastAiRequestAt = now
         teacherRepository.save(teacher)
 
-        val promptText = buildExercisePrompt(type, topic, amount)
+        val userMessageText = buildUserMessage(type, topic, amount)
 
-        val systemMessage = SystemPromptTemplate("You are a helpful assistant that generates Spanish language exercises.")
+        val systemMessage = SystemPromptTemplate(SYSTEM_MESSAGE)
             .createMessage()
-        val userMessage = UserMessage(promptText)
+        val userMessage = UserMessage(userMessageText)
 
         return try {
             val response = chatModel.call(Prompt(listOf(systemMessage, userMessage)))
-            val content = response.result?.output?.text ?: "No content generated"
-            AiGenerateResponse(content)
+            val content = response.result?.output?.text
+            if (content.isNullOrBlank()) {
+                AiGenerateResponse("ERROR: AI generated an empty response. Please try again or check your topic.")
+            } else {
+                AiGenerateResponse(content)
+            }
         } catch (e: Exception) {
-            AiGenerateResponse("ERROR: AI generation failed")
+            AiGenerateResponse("ERROR: AI generation failed: ${e.message}")
         }
     }
 
     fun buildExercisePrompt(type: String, topic: String?, amount: Int): String {
+        val userMessage = buildUserMessage(type, topic, amount)
+        return "$SYSTEM_MESSAGE\n\n$userMessage"
+    }
+
+    fun buildUserMessage(type: String, topic: String?, amount: Int): String {
         val practiceType = if (type == "MULTIPLE_CHOICE") {
             "multiple choice practice"
         } else {
@@ -87,7 +98,7 @@ class AiService(
 
         return BASE_PROMPT.trimIndent()
             .replace("[AMOUNT]", amount.toString())
-            .replace("[TOPIC]", topic ?: "preterito indefinido")
+            .replace("[TOPIC]", topic.takeIf { !it.isNullOrBlank() } ?: "preterito indefinido")
             .replace("[PRACTICE_TYPE]", practiceType)
             .replace("[FORMAT_INSTRUCTIONS]", instructions.trimIndent().trimEnd())
     }

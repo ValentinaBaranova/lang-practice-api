@@ -7,7 +7,8 @@ spring:
       chat:
         options:
           model: gpt-4o-mini
-          temperature: 0.5
+          temperature: 1
+          max-tokens: 500
   datasource:
     url: jdbc:postgresql://localhost:5432/lang_practice
     username: postgres
