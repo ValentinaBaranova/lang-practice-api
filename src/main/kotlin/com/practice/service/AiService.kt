@@ -19,20 +19,22 @@ class AiService(
     private val aiRequestsLimit: Int
 ) {
     companion object {
-        const val FILL_GAP_PROMPT = """
-            Generate [AMOUNT] sentences in Argentine Spanish about [TOPIC] for language practice where students fill in the blanks.
-            Plain text, no empty lines. One sentence per line.
-            Use the format: Sentence with [answer] (infinitive_verb_or_hint). 
-            Example: Mañana [iremos] (nosotros, ir) al cine.
+        private const val BASE_PROMPT = """
+            Generate [AMOUNT] sentences in Argentine Spanish about [TOPIC] for [PRACTICE_TYPE].
+            Plain text, no empty lines. One sentence per line. Do not include line numbers.
+            [FORMAT_INSTRUCTIONS]
+            Avoid forms where pronouns are attached directly to verbs.
             Focus on common everyday situations and Argentine vocabulary.
         """
 
-        const val MULTIPLE_CHOICE_PROMPT = """
-            Generate [AMOUNT] sentences in Argentine Spanish about [TOPIC] for multiple choice practice.
-            Plain text, no empty lines. One sentence per line.
+        private const val FILL_GAP_INSTRUCTIONS = """
+            Use the format: Sentence with [answer] (infinitive_verb_or_hint). 
+            Example: Mañana [iremos] (nosotros, ir) al cine.
+        """
+
+        private const val MULTIPLE_CHOICE_INSTRUCTIONS = """
             Use the format: Sentence with [correct answer] {'option1|option2|option3'}. 
             Example: No [hables] {'hablas|hables|hablar'} tan rápido.
-            Focus on common everyday situations and Argentine vocabulary.
         """
     }
 
@@ -55,15 +57,7 @@ class AiService(
         teacher.lastAiRequestAt = now
         teacherRepository.save(teacher)
 
-        val promptTemplate = if (type == "MULTIPLE_CHOICE") {
-            MULTIPLE_CHOICE_PROMPT
-        } else {
-            FILL_GAP_PROMPT
-        }
-
-        val promptText = promptTemplate.trimIndent()
-            .replace("[TOPIC]", topic ?: "preterito indefinido")
-            .replace("[AMOUNT]", amount.toString())
+        val promptText = buildExercisePrompt(type, topic, amount)
 
         val systemMessage = SystemPromptTemplate("You are a helpful assistant that generates Spanish language exercises.")
             .createMessage()
@@ -79,14 +73,22 @@ class AiService(
     }
 
     fun buildExercisePrompt(type: String, topic: String?, amount: Int): String {
-        val template = if (type == "MULTIPLE_CHOICE") {
-            MULTIPLE_CHOICE_PROMPT
+        val practiceType = if (type == "MULTIPLE_CHOICE") {
+            "multiple choice practice"
         } else {
-            FILL_GAP_PROMPT
+            "language practice where students fill in the blanks"
         }
 
-        return template.trimIndent()
-            .replace("[TOPIC]", topic ?: "preterito indefinido")
+        val instructions = if (type == "MULTIPLE_CHOICE") {
+            MULTIPLE_CHOICE_INSTRUCTIONS
+        } else {
+            FILL_GAP_INSTRUCTIONS
+        }
+
+        return BASE_PROMPT.trimIndent()
             .replace("[AMOUNT]", amount.toString())
+            .replace("[TOPIC]", topic ?: "preterito indefinido")
+            .replace("[PRACTICE_TYPE]", practiceType)
+            .replace("[FORMAT_INSTRUCTIONS]", instructions.trimIndent().trimEnd())
     }
 }
