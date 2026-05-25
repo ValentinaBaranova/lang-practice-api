@@ -45,7 +45,6 @@ class TelegramBotService(
             "Ser vs Estar",
             "Por vs Para",
         )
-        const val TEACHER_ACCESS_CODE = "DEFAULT001"
     }
 
     override fun getBotUsername(): String = botUsername
@@ -168,7 +167,7 @@ class TelegramBotService(
             type = "FILL_GAP_TEXT",
             topic = topic,
             amount = 10,
-            teacherAccessCode = TEACHER_ACCESS_CODE
+            teacher = null
         )
 
         if (aiResponse.content.startsWith("ERROR:")) {
@@ -179,11 +178,10 @@ class TelegramBotService(
             title = "Daily Practice: $topic",
             type = ExerciseType.FILL_GAP_TEXT,
             visibility = ExerciseVisibility.PRIVATE,
-            bulkInput = aiResponse.content,
-            teacherAccessCode = TEACHER_ACCESS_CODE
+            bulkInput = aiResponse.content
         )
 
-        val exerciseSet = exerciseSetService.createExerciseSet(request)
+        val exerciseSet = exerciseSetService.createExerciseSet(null, request)
         return "$baseUrl/es/practice/${exerciseSet.shareSlug}"
     }
 

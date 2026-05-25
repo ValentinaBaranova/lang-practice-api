@@ -1,5 +1,6 @@
 package com.practice.service
 
+import com.practice.domain.Teacher
 import com.practice.dto.AiGenerateResponse
 import com.practice.repository.TeacherRepository
 import org.springframework.ai.chat.messages.UserMessage
@@ -41,23 +42,22 @@ class AiService(
     }
 
     @Transactional
-    fun generateExercise(type: String, topic: String?, amount: Int, teacherAccessCode: String): AiGenerateResponse {
-        val teacher = teacherRepository.findByAccessCode(teacherAccessCode)
-            ?: throw NoSuchElementException("Teacher not found with accessCode: $teacherAccessCode")
+    fun generateExercise(type: String, topic: String?, amount: Int, teacher: Teacher?): AiGenerateResponse {
+        if (teacher != null) {
+            val now = OffsetDateTime.now()
+            val lastRequest = teacher.lastAiRequestAt
 
-        val now = OffsetDateTime.now()
-        val lastRequest = teacher.lastAiRequestAt
-
-        if (lastRequest != null && lastRequest.toLocalDate().isEqual(now.toLocalDate())) {
-            if (teacher.aiRequestsCount >= aiRequestsLimit) {
-                return AiGenerateResponse("ERROR: Daily AI request limit ($aiRequestsLimit) reached. Please try again tomorrow.")
+            if (lastRequest != null && lastRequest.toLocalDate().isEqual(now.toLocalDate())) {
+                if (teacher.aiRequestsCount >= aiRequestsLimit) {
+                    return AiGenerateResponse("ERROR: Daily AI request limit ($aiRequestsLimit) reached. Please try again tomorrow.")
+                }
+                teacher.aiRequestsCount++
+            } else {
+                teacher.aiRequestsCount = 1
             }
-            teacher.aiRequestsCount++
-        } else {
-            teacher.aiRequestsCount = 1
+            teacher.lastAiRequestAt = now
+            teacherRepository.save(teacher)
         }
-        teacher.lastAiRequestAt = now
-        teacherRepository.save(teacher)
 
         val userMessageText = buildUserMessage(type, topic, amount)
 

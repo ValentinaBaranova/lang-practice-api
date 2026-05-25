@@ -5,24 +5,22 @@ import com.practice.dto.ExerciseSetCreateRequest
 import com.practice.dto.ExerciseSetResponse
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import java.util.UUID
 
 class ExerciseOrderingIntegrationTest : IntegrationTestBase() {
 
-    private val defaultTeacherId = UUID.fromString("00000000-0000-0000-0000-000000000000")
-    private val defaultAccessCode = "DEFAULT001"
-
     @Test
     fun `exercise list should be ordered by createdAt descending`() {
         // 1. Create first exercise
         val request1 = ExerciseSetCreateRequest(
-            teacherAccessCode = defaultAccessCode,
             title = "First Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             bulkInput = "The [first] exercise."
         )
-        val response1 = restTemplate.postForEntity(url("/api/exercise-sets"), request1, ExerciseSetResponse::class.java)
+        val response1 = restTemplate.postForEntity(url("/api/exercise-sets"), HttpEntity(request1, authHeaders()), ExerciseSetResponse::class.java)
         assertThat(response1.statusCode).isEqualTo(HttpStatus.OK)
         val exercise1 = response1.body!!
 
@@ -34,17 +32,21 @@ class ExerciseOrderingIntegrationTest : IntegrationTestBase() {
 
         // 2. Create second exercise
         val request2 = ExerciseSetCreateRequest(
-            teacherAccessCode = defaultAccessCode,
             title = "Second Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             bulkInput = "The [second] exercise."
         )
-        val response2 = restTemplate.postForEntity(url("/api/exercise-sets"), request2, ExerciseSetResponse::class.java)
+        val response2 = restTemplate.postForEntity(url("/api/exercise-sets"), HttpEntity(request2, authHeaders()), ExerciseSetResponse::class.java)
         assertThat(response2.statusCode).isEqualTo(HttpStatus.OK)
         val exercise2 = response2.body!!
 
         // 3. Get list and verify order
-        val listResponse = restTemplate.getForEntity(url("/api/exercise-sets?accessCode=$defaultAccessCode"), Map::class.java)
+        val listResponse = restTemplate.exchange(
+            url("/api/exercise-sets"),
+            HttpMethod.GET,
+            HttpEntity<Nothing>(authHeaders()),
+            Map::class.java
+        )
         assertThat(listResponse.statusCode).isEqualTo(HttpStatus.OK)
         val body = listResponse.body!!
         val content = body["content"] as List<Map<String, Any>>

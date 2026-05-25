@@ -21,8 +21,8 @@ class ExerciseSet(
     @GeneratedValue
     var id: UUID? = null,
 
-    @Column(name = "teacher_id", nullable = false)
-    var teacherId: UUID,
+    @Column(name = "teacher_id", nullable = true)
+    var teacherId: UUID? = null,
 
     @Column(nullable = false)
     var title: String,

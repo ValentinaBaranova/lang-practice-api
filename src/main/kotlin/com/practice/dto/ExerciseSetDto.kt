@@ -9,7 +9,6 @@ import java.util.UUID
 
 data class ExerciseSetResponse(
     val id: UUID,
-    val teacherAccessCode: String? = null,
     val teacherName: String? = null,
     val title: String,
     val type: ExerciseType,
@@ -36,9 +35,6 @@ data class ExerciseQuestion(
 )
 
 data class ExerciseSetCreateRequest(
-    @field:NotBlank(message = "Teacher access code is required")
-    val teacherAccessCode: String,
-
     @field:NotBlank(message = "Title is required")
     val title: String,
 

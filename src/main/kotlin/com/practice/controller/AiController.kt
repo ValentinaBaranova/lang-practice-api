@@ -1,9 +1,11 @@
 package com.practice.controller
 
+import com.practice.domain.Teacher
 import com.practice.dto.AiGenerateRequest
 import com.practice.dto.AiGenerateResponse
 import com.practice.dto.AiPromptResponse
 import com.practice.service.AiService
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -17,12 +19,15 @@ class AiController(
     private val aiService: AiService
 ) {
     @PostMapping("/generate")
-    fun generate(@RequestBody request: AiGenerateRequest): AiGenerateResponse {
+    fun generate(
+        @RequestBody request: AiGenerateRequest,
+        @AuthenticationPrincipal teacher: Teacher?
+    ): AiGenerateResponse {
         return aiService.generateExercise(
             type = request.type,
             topic = request.topic,
             amount = request.amount ?: 10,
-            teacherAccessCode = request.teacherAccessCode
+            teacher = teacher
         )
     }
 

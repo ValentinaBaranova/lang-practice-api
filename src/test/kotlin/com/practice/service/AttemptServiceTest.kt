@@ -16,8 +16,6 @@ import java.util.*
 
 class AttemptServiceTest : IntegrationTestBase() {
 
-    private val defaultTeacherId = UUID.fromString("00000000-0000-0000-0000-000000000000")
-
     @Autowired
     private lateinit var attemptRepository: AttemptRepository
 
@@ -33,7 +31,7 @@ class AttemptServiceTest : IntegrationTestBase() {
     @Test
     fun `submitAnswer should accept answer with different case and without accents`() {
         // Given
-        val teacherId = defaultTeacherId
+        val teacherId: UUID? = null
         val questionId = UUID.randomUUID()
         
         val question = ExerciseQuestion(
@@ -72,7 +70,7 @@ class AttemptServiceTest : IntegrationTestBase() {
     @Test
     fun `submitAnswer should reject incorrect answer`() {
         // Given
-        val teacherId = defaultTeacherId
+        val teacherId: UUID? = null
         val questionId = UUID.randomUUID()
         
         val question = ExerciseQuestion(
@@ -121,7 +119,7 @@ class AttemptServiceTest : IntegrationTestBase() {
     @Test
     fun `normalize should handle accents and case correctly`() {
         // Given
-        val teacherId = defaultTeacherId
+        val teacherId: UUID? = null
         val questionId = UUID.randomUUID()
 
         val question = ExerciseQuestion(id = questionId, prompt = "", correctAnswer = "ÁéÍóÚñ", sourceText = "")
@@ -146,7 +144,7 @@ class AttemptServiceTest : IntegrationTestBase() {
 
     @Test
     fun `normalize should collapse multiple spaces`() {
-        val teacherId = defaultTeacherId
+        val teacherId: UUID? = null
         val questionId = UUID.randomUUID()
         val question = ExerciseQuestion(
             id = questionId,

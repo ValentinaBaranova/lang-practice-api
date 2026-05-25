@@ -2,7 +2,7 @@ package com.practice.service
 
 import com.practice.domain.ExerciseQuestion
 import com.practice.domain.ExerciseSet
-import com.practice.dto.ExerciseQuestion as ExerciseQuestionDto
+import com.practice.domain.Teacher
 import com.practice.dto.ExerciseSetCreateRequest
 import com.practice.dto.ExerciseSetResponse
 import com.practice.dto.ExerciseSetUpdateRequest
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 import kotlin.random.Random
+import com.practice.dto.ExerciseQuestion as ExerciseQuestionDto
 
 @Service
 class ExerciseSetService(
@@ -22,13 +23,10 @@ class ExerciseSetService(
 ) {
 
     @Transactional
-    fun createExerciseSet(request: ExerciseSetCreateRequest): ExerciseSetResponse {
-        val teacher = teacherRepository.findByAccessCode(request.teacherAccessCode)
-            ?: throw NoSuchElementException("Teacher not found with accessCode: ${request.teacherAccessCode}")
-
+    fun createExerciseSet(teacher: Teacher?, request: ExerciseSetCreateRequest): ExerciseSetResponse {
         val questions = parseBulkInput(request.bulkInput, request.type)
         val exerciseSet = ExerciseSet(
-            teacherId = teacher.id!!,
+            teacherId = teacher?.id,
             title = request.title,
             type = request.type,
             visibility = request.visibility,
@@ -40,28 +38,32 @@ class ExerciseSetService(
     }
 
     @Transactional(readOnly = true)
-    fun getExerciseSetById(id: UUID): ExerciseSetResponse {
-        val exerciseSet = exerciseSetRepository.findById(id)
-            .orElseThrow { NoSuchElementException("Exercise set not found with id: $id") }
-        val teacher = teacherRepository.findById(exerciseSet.teacherId)
-            .orElseThrow { NoSuchElementException("Teacher not found with id: ${exerciseSet.teacherId}") }
+    fun getExerciseSetById(id: UUID, teacher: Teacher): ExerciseSetResponse {
+        val exerciseSet = getExerciseSetDomainById(id)
+        if (exerciseSet.teacherId != teacher.id) {
+            throw IllegalAccessException("You are not allowed to access this exercise set")
+        }
         return exerciseSet.toResponse(teacher)
+    }
+
+    private fun getExerciseSetDomainById(id: UUID): ExerciseSet {
+        return exerciseSetRepository.findById(id)
+            .orElseThrow { NoSuchElementException("Exercise set not found with id: $id") }
     }
 
     @Transactional(readOnly = true)
     fun getExerciseSetByShareSlug(shareSlug: String): ExerciseSetResponse {
         val exerciseSet = exerciseSetRepository.findByShareSlug(shareSlug)
             ?: throw NoSuchElementException("Exercise set not found with shareSlug: $shareSlug")
-        val teacher = teacherRepository.findById(exerciseSet.teacherId)
-            .orElseThrow { NoSuchElementException("Teacher not found with id: ${exerciseSet.teacherId}") }
+        val teacher = exerciseSet.teacherId?.let {
+            teacherRepository.findById(it)
+                .orElseThrow { NoSuchElementException("Teacher not found with id: $it") }
+        }
         return exerciseSet.toResponse(teacher)
     }
 
     @Transactional(readOnly = true)
-    fun listExerciseSets(accessCode: String, pageable: Pageable): Page<ExerciseSetResponse> {
-        val teacher = teacherRepository.findByAccessCode(accessCode)
-            ?: throw NoSuchElementException("Teacher not found with accessCode: $accessCode")
-        
+    fun listExerciseSets(teacher: Teacher, pageable: Pageable): Page<ExerciseSetResponse> {
         val exerciseSets = exerciseSetRepository.findByTeacherId(teacher.id!!, pageable)
         
         return exerciseSets.map { it.toResponse(teacher) }
@@ -75,17 +77,16 @@ class ExerciseSetService(
     }
 
     @Transactional
-    fun updateExerciseSet(id: UUID, request: ExerciseSetUpdateRequest): ExerciseSetResponse {
-        val exerciseSet = exerciseSetRepository.findById(id)
-            .orElseThrow { NoSuchElementException("Exercise set not found with id: $id") }
-
+    fun updateExerciseSet(id: UUID, teacher: Teacher, request: ExerciseSetUpdateRequest): ExerciseSetResponse {
+        val exerciseSet = getExerciseSetDomainById(id)
+        if (exerciseSet.teacherId != teacher.id) {
+            throw IllegalAccessException("You are not allowed to update this exercise set")
+        }
         exerciseSet.title = request.title
         exerciseSet.visibility = request.visibility
         exerciseSet.questions = parseBulkInput(request.bulkInput, exerciseSet.type)
 
         val saved = exerciseSetRepository.save(exerciseSet)
-        val teacher = teacherRepository.findById(saved.teacherId)
-            .orElseThrow { NoSuchElementException("Teacher not found with id: ${saved.teacherId}") }
         
         return saved.toResponse(teacher)
     }
@@ -161,7 +162,6 @@ class ExerciseSetService(
 
     private fun ExerciseSet.toResponse(teacher: com.practice.domain.Teacher? = null) = ExerciseSetResponse(
         id = this.id!!,
-        teacherAccessCode = teacher?.accessCode,
         teacherName = teacher?.name,
         title = this.title,
         type = this.type,

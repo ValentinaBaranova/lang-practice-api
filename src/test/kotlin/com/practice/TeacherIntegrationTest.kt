@@ -15,7 +15,6 @@ class TeacherIntegrationTest : IntegrationTestBase() {
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body?.name).isEqualTo("New Teacher")
-        assertThat(response.body?.accessCode).isNotNull().hasSize(10)
     }
 
     @Test
@@ -24,5 +23,22 @@ class TeacherIntegrationTest : IntegrationTestBase() {
         val response = restTemplate.postForEntity(url("/api/teachers"), request, Map::class.java)
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+    }
+
+    @Test
+    fun `should create teacher on the fly when authenticated with Google`() {
+        val headers = authHeaders()
+        val entity = org.springframework.http.HttpEntity<Unit>(headers)
+        
+        val response = restTemplate.exchange(
+            url("/api/teachers/me"),
+            org.springframework.http.HttpMethod.GET,
+            entity,
+            TeacherResponse::class.java
+        )
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body?.email).isEqualTo("test@example.com")
+        assertThat(response.body?.name).isEqualTo("Test Teacher")
     }
 }

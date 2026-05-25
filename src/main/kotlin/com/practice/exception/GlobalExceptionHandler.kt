@@ -39,4 +39,13 @@ class GlobalExceptionHandler {
             )
         )
     }
+
+    @ExceptionHandler(IllegalAccessException::class)
+    fun handleIllegalAccessException(ex: IllegalAccessException): ResponseEntity<Map<String, Any>> {
+        return ResponseEntity.status(403).body(
+            mapOf(
+                "message" to (ex.message ?: "Access denied")
+            )
+        )
+    }
 }

@@ -29,6 +29,9 @@ application:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   ai:
     requests-limit: ${AI_REQUESTS_LIMIT:20}
+  security:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:fake-client-id}
 
 scheduling:
   cron:

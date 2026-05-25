@@ -6,37 +6,34 @@ import com.practice.dto.ExerciseSetCreateRequest
 import com.practice.dto.ExerciseSetResponse
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import java.util.UUID
 
 class ExerciseVisibilityIntegrationTest : IntegrationTestBase() {
 
-    private val defaultTeacherId = UUID.fromString("00000000-0000-0000-0000-000000000000")
-    private val defaultAccessCode = "DEFAULT001"
-
     @Test
     fun `should only return public exercises in public endpoint`() {
         // 1. Create a private exercise
         val privateRequest = ExerciseSetCreateRequest(
-            teacherAccessCode = defaultAccessCode,
             title = "Private Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             visibility = ExerciseVisibility.PRIVATE,
             bulkInput = "This is [private]."
         )
-        val privateResponse = restTemplate.postForEntity(url("/api/exercise-sets"), privateRequest, ExerciseSetResponse::class.java)
+        val privateResponse = restTemplate.postForEntity(url("/api/exercise-sets"), HttpEntity(privateRequest, authHeaders()), ExerciseSetResponse::class.java)
         assertThat(privateResponse.statusCode).isEqualTo(HttpStatus.OK)
         val privateExercise = privateResponse.body!!
 
         // 2. Create a public exercise
         val publicRequest = ExerciseSetCreateRequest(
-            teacherAccessCode = defaultAccessCode,
             title = "Public Exercise",
             type = ExerciseType.FILL_GAP_TEXT,
             visibility = ExerciseVisibility.PUBLIC,
             bulkInput = "This is [public]."
         )
-        val publicResponse = restTemplate.postForEntity(url("/api/exercise-sets"), publicRequest, ExerciseSetResponse::class.java)
+        val publicResponse = restTemplate.postForEntity(url("/api/exercise-sets"), HttpEntity(publicRequest, authHeaders()), ExerciseSetResponse::class.java)
         assertThat(publicResponse.statusCode).isEqualTo(HttpStatus.OK)
         val publicExercise = publicResponse.body!!
 
@@ -50,11 +47,15 @@ class ExerciseVisibilityIntegrationTest : IntegrationTestBase() {
         val publicItem = publicContent.find { it["id"] == publicExercise.id.toString() }
         assertThat(publicItem).isNotNull
         assertThat(publicItem!!["teacherName"]).isNull()
-        assertThat(publicItem["teacherAccessCode"]).isNull()
         assertThat(publicContent.any { it["id"] == privateExercise.id.toString() }).isFalse()
         
         // 5. Verify teacher list still shows both (or at least the teacher's ones)
-        val teacherListResponse = restTemplate.getForEntity(url("/api/exercise-sets?accessCode=$defaultAccessCode"), Map::class.java)
+        val teacherListResponse = restTemplate.exchange(
+            url("/api/exercise-sets"),
+            HttpMethod.GET,
+            HttpEntity<Nothing>(authHeaders()),
+            Map::class.java
+        )
         val teacherBody = teacherListResponse.body!!
         val teacherContent = teacherBody["content"] as List<Map<String, Any>>
         assertThat(teacherContent.any { it["id"] == publicExercise.id.toString() }).isTrue()

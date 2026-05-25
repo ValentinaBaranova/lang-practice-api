@@ -7,5 +7,5 @@ import java.util.UUID
 
 @Repository
 interface TeacherRepository : JpaRepository<Teacher, UUID> {
-    fun findByAccessCode(accessCode: String): Teacher?
+    fun findByEmail(email: String): Teacher?
 }
