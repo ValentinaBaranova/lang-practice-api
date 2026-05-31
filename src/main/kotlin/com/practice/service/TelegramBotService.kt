@@ -181,7 +181,7 @@ class TelegramBotService(
         )
 
         val exerciseSet = exerciseSetService.createExerciseSet(null, request)
-        return "$baseUrl/es/practice/${exerciseSet.shareSlug}"
+        return "$baseUrl/es/spanish/practice/${exerciseSet.shareSlug}"
     }
 
     @Scheduled(cron = "\${scheduling.cron.send-daily-exercises:0 0 9 * * *}") // Configurable via application.yml; default: every day at 9 AM

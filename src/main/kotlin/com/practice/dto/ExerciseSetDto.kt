@@ -9,7 +9,6 @@ import java.util.UUID
 
 data class ExerciseSetResponse(
     val id: UUID,
-    val teacherName: String? = null,
     val title: String,
     val type: ExerciseType,
     val visibility: ExerciseVisibility,

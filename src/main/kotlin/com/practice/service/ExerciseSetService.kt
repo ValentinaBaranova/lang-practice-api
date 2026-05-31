@@ -34,7 +34,7 @@ class ExerciseSetService(
             type = request.type,
             visibility = ExerciseVisibility.PRIVATE,
             questions = questions,
-            shareSlug = generateUniqueShareSlug()
+            shareSlug = generateUniqueShareSlug(request.title)
         )
 
         return exerciseSetRepository.save(exerciseSet).toResponse(teacher)
@@ -168,21 +168,30 @@ class ExerciseSetService(
             .replace("\\s+".toRegex(), " ")
     }
 
-    private fun generateUniqueShareSlug(): String {
+    private fun generateUniqueShareSlug(title: String): String {
+        val baseSlug = slugify(title).take(50).trim('-')
         val charPool : List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         var slug: String
         do {
-            slug = (1..8)
+            val randomPart = (1..6)
                 .map { Random.nextInt(0, charPool.size) }
                 .map(charPool::get)
                 .joinToString("")
+            slug = if (baseSlug.isNotEmpty()) "$baseSlug-$randomPart" else randomPart
         } while (exerciseSetRepository.findByShareSlug(slug) != null)
         return slug
     }
 
+    private fun slugify(text: String): String {
+        return Normalizer.normalize(text.lowercase(), Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .replace("[^a-z0-9]+".toRegex(), "-")
+            .replace("-+".toRegex(), "-")
+            .trim('-')
+    }
+
     private fun ExerciseSet.toResponse(teacher: com.practice.domain.Teacher? = null) = ExerciseSetResponse(
         id = this.id!!,
-        teacherName = teacher?.name,
         title = this.title,
         type = this.type,
         visibility = this.visibility,

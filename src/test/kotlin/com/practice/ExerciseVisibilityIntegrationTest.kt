@@ -54,7 +54,6 @@ class ExerciseVisibilityIntegrationTest : IntegrationTestBase() {
         // 4. Verify list
         val publicItem = publicContent.find { it["id"] == publicExercise.id.toString() }
         assertThat(publicItem).isNotNull
-        assertThat(publicItem!!["teacherName"]).isNull()
         assertThat(publicContent.any { it["id"] == privateExercise.id.toString() }).isFalse()
         
         // 5. Verify teacher list still shows both (or at least the teacher's ones)
