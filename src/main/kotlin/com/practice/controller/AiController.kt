@@ -1,6 +1,7 @@
 package com.practice.controller
 
 import com.practice.domain.Teacher
+import com.practice.domain.ExerciseType
 import com.practice.dto.AiGenerateRequest
 import com.practice.dto.AiGenerateResponse
 import com.practice.dto.AiPromptResponse
@@ -25,7 +26,7 @@ class AiController(
     ): AiGenerateResponse {
         return aiService.generateExercise(
             type = request.type,
-            topic = request.topic,
+            topic = request.topic ?: AiService.DEFAULT_TOPIC,
             amount = request.amount ?: 10,
             teacher = teacher
         )
@@ -33,10 +34,11 @@ class AiController(
 
     @GetMapping("/build-exercise-prompt")
     fun buildExercisePrompt(
-        @RequestParam type: String,
+        @RequestParam type: ExerciseType,
         @RequestParam(required = false) topic: String?,
         @RequestParam(defaultValue = "10") amount: Int
     ): AiPromptResponse {
-        return AiPromptResponse(aiService.buildExercisePrompt(type, topic, amount))
+        val userMessage = aiService.buildGenerateQuestionsPrompt(type, topic, amount)
+        return AiPromptResponse("$userMessage")
     }
 }

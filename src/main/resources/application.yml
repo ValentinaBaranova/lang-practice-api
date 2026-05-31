@@ -6,9 +6,9 @@ spring:
       api-key: ${OPENAI_API_KEY:}
       chat:
         options:
-          model: gpt-4o-mini
+          model: gpt-5.4-mini
           temperature: 1
-          max-tokens: 500
+          max_completion_tokens: 500
   datasource:
     url: jdbc:postgresql://localhost:5432/lang_practice
     username: postgres

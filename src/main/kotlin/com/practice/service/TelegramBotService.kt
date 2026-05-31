@@ -164,7 +164,7 @@ class TelegramBotService(
 
     private fun generateAndSaveExercise(topic: String): String {
         val aiResponse = aiService.generateExercise(
-            type = "FILL_GAP_TEXT",
+            type = ExerciseType.FILL_GAP_TEXT,
             topic = topic,
             amount = 10,
             teacher = null

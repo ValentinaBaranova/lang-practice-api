@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
-class GoogleTokenService(
+open class GoogleTokenService(
     @Value("\${application.security.google.client-id}")
     private val clientId: String
 ) {
@@ -15,7 +15,7 @@ class GoogleTokenService(
         .setAudience(listOf(clientId))
         .build()
 
-    fun verify(tokenString: String): GoogleUserInfo? {
+    open fun verify(tokenString: String): GoogleUserInfo? {
         val idToken = try {
             verifier.verify(tokenString)
         } catch (e: Exception) {

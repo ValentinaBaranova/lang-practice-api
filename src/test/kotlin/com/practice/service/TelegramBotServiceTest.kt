@@ -1,6 +1,7 @@
 package com.practice.service
 
 import com.practice.IntegrationTestBase
+import com.practice.domain.ExerciseType
 import com.practice.domain.TelegramUser
 import com.practice.repository.TelegramUserRepository
 import com.practice.repository.ExerciseSetRepository
@@ -15,6 +16,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.telegram.telegrambots.meta.api.objects.Update
 
@@ -29,8 +31,13 @@ class TelegramBotServiceTest : IntegrationTestBase() {
     @Autowired
     private lateinit var exerciseSetRepository: ExerciseSetRepository
 
-    @MockitoSpyBean
+    @MockitoBean
     private lateinit var aiService: AiService
+
+    private fun <T> anyNotNull(defaultValue: T): T {
+        any<T>()
+        return defaultValue
+    }
 
     @Test
     fun `test handlePractice generates exercise without teacher`() {
@@ -39,17 +46,15 @@ class TelegramBotServiceTest : IntegrationTestBase() {
         val user = TelegramUser(chatId = chatId, topic = topic)
         telegramUserRepository.save(user)
         
-        doReturn(null).`when`(telegramBotService).execute(any<org.telegram.telegrambots.meta.api.methods.send.SendMessage>())
+        doReturn(null).`when`(telegramBotService).execute(anyNotNull(org.telegram.telegrambots.meta.api.methods.send.SendMessage()))
         
         // Mock AiService to return a valid response
-        doReturn(com.practice.dto.AiGenerateResponse("Sentence [answer] (hint)"))
-            .`when`(aiService)
-            .generateExercise(
-                type = anyString(),
-                topic = anyString(),
-                amount = anyInt(),
-                teacher = any()
-            )
+        `when`(aiService.generateExercise(
+            type = anyNotNull(ExerciseType.FILL_GAP_TEXT),
+            topic = anyString(),
+            amount = anyInt(),
+            teacher = any()
+        )).thenReturn(com.practice.dto.AiGenerateResponse("Sentence [answer] (hint)"))
 
         val update = mock(Update::class.java)
         val message = mock(org.telegram.telegrambots.meta.api.objects.Message::class.java)
@@ -62,7 +67,7 @@ class TelegramBotServiceTest : IntegrationTestBase() {
         telegramBotService.onUpdateReceived(update)
         
         verify(aiService).generateExercise(
-            type = anyString(),
+            type = anyNotNull(ExerciseType.FILL_GAP_TEXT),
             topic = anyString(),
             amount = anyInt(),
             teacher = any()
@@ -144,6 +149,7 @@ class TelegramBotServiceTest : IntegrationTestBase() {
         assertThat(updatedUser.topic).isEqualTo("Ser vs Estar")
         assertThat(updatedUser.isSubscribed).isFalse()
     }
+
     @Test
     fun `test handleTopicSelection sets topic and isSubscribed`() {
         val chatId = 13579L

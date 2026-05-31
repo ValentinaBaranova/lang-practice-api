@@ -11,14 +11,14 @@ import com.practice.repository.AttemptRepository
 import com.practice.repository.ExerciseSetRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.text.Normalizer
 import java.util.UUID
 
 @Service
 class AttemptService(
     private val attemptRepository: AttemptRepository,
     private val attemptQuestionRepository: AttemptQuestionRepository,
-    private val exerciseSetRepository: ExerciseSetRepository
+    private val exerciseSetRepository: ExerciseSetRepository,
+    private val exerciseSetService: ExerciseSetService
 ) {
 
     @Transactional
@@ -48,16 +48,7 @@ class AttemptService(
         val question = exerciseSet.questions.find { it.id == request.questionId }
             .let { it ?: throw NoSuchElementException("Question not found with id: ${request.questionId}") }
 
-        // Basic verification: compare full sentence or the specific word (case-insensitive, trimmed, and accent-insensitive)
-        val normalizedAnswer = normalize(request.answer)
-        val normalizedCorrectAnswer = normalize(question.correctAnswer)
-        val normalizedSourceText = normalize(question.sourceText
-            .replace("[", "")
-            .replace("]", "")
-            .replace(Regex("\\{.*?\\}"), ""))
-
-        val isCorrect = normalizedCorrectAnswer.equals(normalizedAnswer, ignoreCase = true) ||
-                normalizedSourceText.equals(normalizedAnswer, ignoreCase = true)
+        val isCorrect = exerciseSetService.isAnswerCorrect(question, request.answer)
 
         val attemptQuestion = AttemptQuestion(
             attemptId = attemptId,
@@ -78,11 +69,6 @@ class AttemptService(
         return savedQuestion.toResponse()
     }
 
-    private fun normalize(text: String): String {
-        return Normalizer.normalize(text.trim(), Normalizer.Form.NFD)
-            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            .replace("\\s+".toRegex(), " ")
-    }
 
     @Transactional(readOnly = true)
     fun getAttempt(id: UUID): AttemptResponse {

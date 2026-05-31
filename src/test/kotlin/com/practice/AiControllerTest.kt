@@ -1,5 +1,6 @@
 package com.practice
 
+import com.practice.domain.ExerciseType
 import com.practice.dto.AiGenerateRequest
 import com.practice.dto.AiPromptResponse
 import org.assertj.core.api.Assertions.assertThat
@@ -13,7 +14,7 @@ class AiControllerTest : IntegrationTestBase() {
     @Test
     fun `should accept generate request for authenticated teacher`() {
         val request = AiGenerateRequest(
-            type = "FILL_GAP",
+            type = ExerciseType.FILL_GAP_TEXT,
             topic = "test",
             amount = 5,
         )
@@ -37,7 +38,6 @@ class AiControllerTest : IntegrationTestBase() {
         )
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body?.prompt).contains("You are a helpful assistant")
         assertThat(response.body?.prompt).contains("Generate 5 sentences")
         assertThat(response.body?.prompt).contains("multiple choice practice")
     }

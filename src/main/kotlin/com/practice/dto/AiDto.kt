@@ -1,7 +1,9 @@
 package com.practice.dto
 
+import com.practice.domain.ExerciseType
+
 data class AiGenerateRequest(
-    val type: String,
+    val type: ExerciseType,
     val topic: String? = null,
     val amount: Int? = 10
 )

@@ -1,29 +1,32 @@
 package com.practice.service
 
 import com.practice.domain.Teacher
+import com.practice.domain.ExerciseType
 import com.practice.dto.AiGenerateResponse
 import com.practice.repository.TeacherRepository
-import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.model.ChatModel
 import org.springframework.ai.chat.prompt.Prompt
-import org.springframework.ai.chat.prompt.SystemPromptTemplate
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.OffsetDateTime
+import java.util.logging.Logger
 
 @Service
-class AiService(
+open class AiService(
     private val chatModel: ChatModel,
     private val teacherRepository: TeacherRepository,
+    private val exerciseSetService: ExerciseSetService,
     @Value("\${application.ai.requests-limit}")
     private val aiRequestsLimit: Int
 ) {
+    private val logger = Logger.getLogger(AiService::class.java.name)
+
     companion object {
         private const val SYSTEM_MESSAGE = "You are a helpful assistant that generates Spanish language exercises."
 
         private const val BASE_PROMPT = """
-            Generate [AMOUNT] sentences in Argentine Spanish about [TOPIC] for [PRACTICE_TYPE].
+            Generate [AMOUNT] sentences in Argentine Spanish about topic "[TOPIC]" for [PRACTICE_TYPE].            
             Plain text, no empty lines. One sentence per line. Do not include line numbers.
             [FORMAT_INSTRUCTIONS]
             If the answer requires a reflexive or object pronoun, include it in the hint.
@@ -31,18 +34,29 @@ class AiService(
         """
 
         private const val FILL_GAP_INSTRUCTIONS = """
+            Put only the element of topic being practiced inside square brackets.
             Use the format: Sentence with [answer] (infinitive_verb_or_hint). 
             Example: Mañana [iremos] (nosotros, ir) al cine.
         """
 
         private const val MULTIPLE_CHOICE_INSTRUCTIONS = """
+            Put only the element of topic being practiced inside square brackets.
             Use the format: Sentence with [correct answer] {'option1|option2|option3'}. 
             Example: No [hables] {'hablas|hables|hablar'} tan rápido.
         """
+
+        private const val SOLVE_PROMPT = """
+            Solve the following Argentinian Spanish language exercises about [TOPIC].
+            Provide only the missing words, one per line, in order.
+            Do not include brackets or other special formatting in the sentences.
+            Plain text, no empty lines. One sentence per line. Do not include line numbers.
+        """
+
+        const val DEFAULT_TOPIC = "Presente"
     }
 
     @Transactional
-    fun generateExercise(type: String, topic: String?, amount: Int, teacher: Teacher?): AiGenerateResponse {
+    open fun generateExercise(type: ExerciseType, topic: String, amount: Int, teacher: Teacher?): AiGenerateResponse {
         if (teacher != null) {
             val now = OffsetDateTime.now()
             val lastRequest = teacher.lastAiRequestAt
@@ -59,38 +73,76 @@ class AiService(
             teacherRepository.save(teacher)
         }
 
-        val userMessageText = buildUserMessage(type, topic, amount)
-
-        val systemMessage = SystemPromptTemplate(SYSTEM_MESSAGE)
-            .createMessage()
-        val userMessage = UserMessage(userMessageText)
+        val verificationAmount = amount * 2
+        val generateExercisesPrompt = buildGenerateQuestionsPrompt(type, topic, verificationAmount)
 
         return try {
-            val response = chatModel.call(Prompt(listOf(systemMessage, userMessage)))
-            val content = response.result?.output?.text
-            if (content.isNullOrBlank()) {
-                AiGenerateResponse("ERROR: AI generated an empty response. Please try again or check your topic.")
-            } else {
-                AiGenerateResponse(content)
+            val response = chatModel.call(Prompt(generateExercisesPrompt))
+            val generatedExercises = response.result?.output?.text
+            if (generatedExercises.isNullOrBlank()) {
+                return AiGenerateResponse("ERROR: AI generated an empty response. Please try again or check your topic.")
             }
+
+            val resultSentences = validateExercises(generatedExercises, type, topic, amount)
+            AiGenerateResponse(resultSentences.joinToString("\n"))
         } catch (e: Exception) {
             AiGenerateResponse("ERROR: AI generation failed: ${e.message}")
         }
     }
 
-    fun buildExercisePrompt(type: String, topic: String?, amount: Int): String {
-        val userMessage = buildUserMessage(type, topic, amount)
-        return "$SYSTEM_MESSAGE\n\n$userMessage"
+    private fun validateExercises(
+        generatedExercises: String,
+        type: ExerciseType,
+        topic: String,
+        amount: Int
+    ): List<String> {
+        val questions = exerciseSetService.parseBulkInput(generatedExercises, type, throwOnError = false)
+
+        val solvePrompt = SOLVE_PROMPT.trimIndent().trim()
+            .replace("[TOPIC]", topic) + "\n\n" +
+            questions.joinToString("\n") { it.prompt }
+
+        val solveResponse = chatModel.call(Prompt(solvePrompt))
+        val solveContent = solveResponse.result?.output?.text
+        val aiAnswers = solveContent?.lines()?.filter { it.isNotBlank() } ?: emptyList()
+
+        val validResults = mutableListOf<String>()
+        val invalidResults = mutableListOf<String>()
+        questions.forEachIndexed { index, question ->
+            val aiAnswer = aiAnswers.getOrNull(index)
+            val isValid = aiAnswer != null && exerciseSetService.isAnswerCorrect(question, aiAnswer)
+            if (!isValid) {
+                invalidResults.add(question.sourceText)
+                logger.warning(
+                    "AI generated invalid sentences for topic '$topic': " +
+                        "${question.sourceText} (expected: ${question.correctAnswer}, got: ${aiAnswer ?: "null"})"
+                )
+            } else {
+                validResults.add(question.sourceText)
+            }
+        }
+
+        if (invalidResults.isNotEmpty()) {
+            logger.warning(
+                "AI generated ${invalidResults.size} invalid sentences " +
+                    "from ${generatedExercises.length} for topic '$topic'"
+            )
+        }
+
+        if (validResults.count() < amount) {
+            throw RuntimeException("Not enough valid questions! topic=$topic, generated exercises: $generatedExercises")
+        }
+        return validResults.take(amount)
     }
 
-    fun buildUserMessage(type: String, topic: String?, amount: Int): String {
-        val practiceType = if (type == "MULTIPLE_CHOICE") {
+    fun buildGenerateQuestionsPrompt(type: ExerciseType, topic: String?, amount: Int): String {
+        val practiceType = if (type == ExerciseType.MULTIPLE_CHOICE) {
             "multiple choice practice"
         } else {
             "language practice where students fill in the blanks"
         }
 
-        val instructions = if (type == "MULTIPLE_CHOICE") {
+        val instructions = if (type == ExerciseType.MULTIPLE_CHOICE) {
             MULTIPLE_CHOICE_INSTRUCTIONS
         } else {
             FILL_GAP_INSTRUCTIONS
