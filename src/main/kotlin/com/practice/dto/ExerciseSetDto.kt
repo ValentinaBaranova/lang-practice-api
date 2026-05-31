@@ -41,8 +41,6 @@ data class ExerciseSetCreateRequest(
     @field:NotNull(message = "Type is required")
     val type: ExerciseType,
 
-    val visibility: ExerciseVisibility = ExerciseVisibility.PRIVATE,
-
     @field:NotBlank(message = "Bulk input is required")
     val bulkInput: String
 )
@@ -50,8 +48,6 @@ data class ExerciseSetCreateRequest(
 data class ExerciseSetUpdateRequest(
     @field:NotBlank(message = "Title is required")
     val title: String,
-
-    val visibility: ExerciseVisibility = ExerciseVisibility.PRIVATE,
 
     @field:NotBlank(message = "Bulk input is required")
     val bulkInput: String

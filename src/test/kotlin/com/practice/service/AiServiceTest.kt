@@ -119,7 +119,7 @@ class AiServiceTest {
         verify(chatModel, times(2)).call(promptCaptor.capture())
 
         val firstPrompt = promptCaptor.allValues[0].instructions[0].text
-        assertThat(firstPrompt).contains("about $topic")
+        assertThat(firstPrompt).contains("about topic \"$topic\"")
 
         val secondPrompt = promptCaptor.allValues[1].instructions[0].text
         assertThat(secondPrompt).contains("about $topic")

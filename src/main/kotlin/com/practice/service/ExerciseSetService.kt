@@ -3,6 +3,7 @@ package com.practice.service
 import com.practice.domain.ExerciseQuestion
 import com.practice.domain.ExerciseSet
 import com.practice.domain.ExerciseType
+import com.practice.domain.ExerciseVisibility
 import com.practice.domain.Teacher
 import com.practice.dto.ExerciseSetCreateRequest
 import com.practice.dto.ExerciseSetResponse
@@ -31,7 +32,7 @@ class ExerciseSetService(
             teacherId = teacher?.id,
             title = request.title,
             type = request.type,
-            visibility = request.visibility,
+            visibility = ExerciseVisibility.PRIVATE,
             questions = questions,
             shareSlug = generateUniqueShareSlug()
         )
@@ -85,7 +86,6 @@ class ExerciseSetService(
             throw IllegalAccessException("You are not allowed to update this exercise set")
         }
         exerciseSet.title = request.title
-        exerciseSet.visibility = request.visibility
         exerciseSet.questions = parseBulkInput(request.bulkInput, exerciseSet.type)
 
         val saved = exerciseSetRepository.save(exerciseSet)
