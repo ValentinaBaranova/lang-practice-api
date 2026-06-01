@@ -4,6 +4,8 @@ import com.practice.domain.Teacher
 import com.practice.dto.ExerciseSetCreateRequest
 import com.practice.dto.ExerciseSetResponse
 import com.practice.dto.ExerciseSetUpdateRequest
+import com.practice.dto.ValidateAnswerRequest
+import com.practice.dto.ValidateAnswerResponse
 import com.practice.service.ExerciseSetService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -33,6 +34,11 @@ class ExerciseSetController(
         @AuthenticationPrincipal teacher: Teacher
     ): ExerciseSetResponse {
         return exerciseSetService.createExerciseSet(teacher, request)
+    }
+
+    @PostMapping("/validate-answer")
+    fun validateAnswer(@Valid @RequestBody request: ValidateAnswerRequest): ValidateAnswerResponse {
+        return ValidateAnswerResponse(exerciseSetService.validateAnswer(request))
     }
 
     @GetMapping("/{id}")

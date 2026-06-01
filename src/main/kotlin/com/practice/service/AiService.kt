@@ -1,7 +1,7 @@
 package com.practice.service
 
-import com.practice.domain.Teacher
 import com.practice.domain.ExerciseType
+import com.practice.domain.Teacher
 import com.practice.dto.AiGenerateResponse
 import com.practice.repository.TeacherRepository
 import org.springframework.ai.chat.model.ChatModel
@@ -84,7 +84,11 @@ open class AiService(
             }
 
             val resultSentences = validateExercises(generatedExercises, type, topic, amount)
-            AiGenerateResponse(resultSentences.joinToString("\n"))
+            val content = resultSentences.joinToString("\n")
+            val questions = exerciseSetService.parseBulkInput(content, type, throwOnError = false)
+                .map { it.toDto() }
+
+            AiGenerateResponse(content, questions)
         } catch (e: Exception) {
             AiGenerateResponse("ERROR: AI generation failed: ${e.message}")
         }

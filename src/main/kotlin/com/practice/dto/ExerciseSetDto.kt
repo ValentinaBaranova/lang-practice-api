@@ -51,3 +51,16 @@ data class ExerciseSetUpdateRequest(
     @field:NotBlank(message = "Bulk input is required")
     val bulkInput: String
 )
+
+
+data class ValidateAnswerRequest(
+    @field:NotNull(message = "Question is required")
+    val question: ExerciseQuestion,
+
+    @field:NotBlank(message = "Answer is required")
+    val answer: String
+)
+
+data class ValidateAnswerResponse(
+    val isCorrect: Boolean
+)

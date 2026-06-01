@@ -9,7 +9,8 @@ data class AiGenerateRequest(
 )
 
 data class AiGenerateResponse(
-    val content: String
+    val content: String,
+    val questions: List<ExerciseQuestion>? = null
 )
 
 data class AiPromptResponse(

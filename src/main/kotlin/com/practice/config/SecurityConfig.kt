@@ -38,7 +38,9 @@ class SecurityConfig(
                     .requestMatchers("/api/attempts/**").permitAll() // Students can submit attempts
                     .requestMatchers(HttpMethod.GET, "/api/exercise-sets/share/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/exercise-sets/public").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/exercise-sets/validate-answer").permitAll()
                     .requestMatchers("/api/teachers/me").authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/ai/generate").permitAll()
                     .requestMatchers("/api/ai/**").authenticated()
                     .requestMatchers("/api/exercise-sets/**").authenticated()
                     .anyRequest().permitAll()

@@ -150,6 +150,10 @@ class ExerciseSetService(
         return questions
     }
 
+    fun validateAnswer(request: com.practice.dto.ValidateAnswerRequest): Boolean {
+        return isAnswerCorrect(request.question.toDomain(), request.answer)
+    }
+
     fun isAnswerCorrect(question: ExerciseQuestion, answer: String): Boolean {
         val normalizedAnswer = normalizeText(answer)
         val normalizedCorrectAnswer = normalizeText(question.correctAnswer)
@@ -208,12 +212,12 @@ class ExerciseSetService(
         sourceText = this.sourceText,
         options = this.options ?: emptyList()
     )
-
-    private fun ExerciseQuestion.toDto() = ExerciseQuestionDto(
-        id = this.id,
-        prompt = this.prompt,
-        correctAnswer = this.correctAnswer,
-        sourceText = this.sourceText,
-        options = if (this.options.isNotEmpty()) this.options else null
-    )
 }
+
+internal fun com.practice.domain.ExerciseQuestion.toDto() = ExerciseQuestionDto(
+    id = this.id,
+    prompt = this.prompt,
+    correctAnswer = this.correctAnswer,
+    sourceText = this.sourceText,
+    options = if (this.options.isNotEmpty()) this.options else null
+)
