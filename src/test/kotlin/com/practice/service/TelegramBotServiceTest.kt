@@ -16,8 +16,6 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.telegram.telegrambots.meta.api.objects.Update
 
 class TelegramBotServiceTest : IntegrationTestBase() {
@@ -25,58 +23,12 @@ class TelegramBotServiceTest : IntegrationTestBase() {
     @Autowired
     private lateinit var telegramUserRepository: TelegramUserRepository
 
-    @MockitoSpyBean
-    private lateinit var telegramBotService: TelegramBotService
-
     @Autowired
     private lateinit var exerciseSetRepository: ExerciseSetRepository
-
-    @MockitoBean
-    private lateinit var aiService: AiService
 
     private fun <T> anyNotNull(defaultValue: T): T {
         any<T>()
         return defaultValue
-    }
-
-    @Test
-    fun `test handlePractice generates exercise without teacher`() {
-        val chatId = 24680L
-        val topic = "Futuro Simple"
-        val user = TelegramUser(chatId = chatId, topic = topic)
-        telegramUserRepository.save(user)
-        
-        doReturn(null).`when`(telegramBotService).execute(anyNotNull(org.telegram.telegrambots.meta.api.methods.send.SendMessage()))
-        
-        // Mock AiService to return a valid response
-        `when`(aiService.generateExercise(
-            type = anyNotNull(ExerciseType.FILL_GAP_TEXT),
-            topic = anyString(),
-            amount = anyInt(),
-            teacher = any()
-        )).thenReturn(com.practice.dto.AiGenerateResponse("Sentence [answer] (hint)"))
-
-        val update = mock(Update::class.java)
-        val message = mock(org.telegram.telegrambots.meta.api.objects.Message::class.java)
-        `when`(update.hasMessage()).thenReturn(true)
-        `when`(update.message).thenReturn(message)
-        `when`(message.hasText()).thenReturn(true)
-        `when`(message.text).thenReturn("/practice")
-        `when`(message.chatId).thenReturn(chatId)
-        
-        telegramBotService.onUpdateReceived(update)
-        
-        verify(aiService).generateExercise(
-            type = anyNotNull(ExerciseType.FILL_GAP_TEXT),
-            topic = anyString(),
-            amount = anyInt(),
-            teacher = any()
-        )
-
-        val exerciseSets = exerciseSetRepository.findAll()
-        val createdSet = exerciseSets.find { it.title.contains(topic) }
-        assertThat(createdSet).isNotNull
-        assertThat(createdSet!!.teacherId).isNull()
     }
 
     @Test

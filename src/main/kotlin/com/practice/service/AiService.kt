@@ -23,7 +23,6 @@ open class AiService(
     private val logger = Logger.getLogger(AiService::class.java.name)
 
     companion object {
-        private const val SYSTEM_MESSAGE = "You are a helpful assistant that generates Spanish language exercises."
 
         private const val BASE_PROMPT = """
             Generate [AMOUNT] sentences in Argentine Spanish about topic "[TOPIC]" for [PRACTICE_TYPE].            
@@ -41,8 +40,8 @@ open class AiService(
 
         private const val MULTIPLE_CHOICE_INSTRUCTIONS = """
             Put only the element of topic being practiced inside square brackets.
-            Use the format: Sentence with [correct answer] {'option1|option2|option3'}. 
-            Example: No [hables] {'hablas|hables|hablar'} tan rápido.
+            Use the format: Sentence with [correct answer] {option1|option2|option3}. 
+            Example: No [hables] {hablas|hables|hablar} tan rápido.
         """
 
         private const val SOLVE_PROMPT = """
