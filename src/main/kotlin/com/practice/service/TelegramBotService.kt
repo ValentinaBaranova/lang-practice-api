@@ -1,5 +1,6 @@
 package com.practice.service
 
+import com.practice.config.TopicsConfig
 import com.practice.domain.ExerciseType
 import com.practice.domain.ExerciseVisibility
 import com.practice.domain.TelegramUser
@@ -22,6 +23,7 @@ class TelegramBotService(
     private val telegramUserRepository: TelegramUserRepository,
     private val aiService: AiService,
     private val exerciseSetService: ExerciseSetService,
+    private val topicsConfig: TopicsConfig,
     @Value("\${telegram.bot.token:}")
     private val botToken: String,
     @Value("\${telegram.bot.username:}")
@@ -31,21 +33,6 @@ class TelegramBotService(
 ) : TelegramLongPollingBot(botToken) {
 
     private val logger = Logger.getLogger(TelegramBotService::class.java.name)
-
-    companion object {
-        val TOPICS = listOf(
-            "Presente",
-            "Pretérito Indefinido",
-            "Pretérito Imperfecto",
-            "Pretérito Perfecto",
-            "Futuro Simple",
-            "Imperativo",
-            "Imperativo Negativo",
-            "Subjuntivo Presente",
-            "Ser vs Estar",
-            "Por vs Para",
-        )
-    }
 
     override fun getBotUsername(): String = botUsername
 
@@ -89,7 +76,7 @@ class TelegramBotService(
         message.text = "Choose a topic to subscribe for daily exercises:"
         
         val markup = InlineKeyboardMarkup()
-        val rows = TOPICS.map { topic ->
+        val rows = topicsConfig.topics.map { topic ->
             val button = InlineKeyboardButton()
             button.text = topic
             button.callbackData = "subscribe_topic:$topic"
@@ -116,7 +103,7 @@ class TelegramBotService(
         message.text = "Choose your preferred topic for practice:"
         
         val markup = InlineKeyboardMarkup()
-        val rows = TOPICS.map { topic ->
+        val rows = topicsConfig.topics.map { topic ->
             val button = InlineKeyboardButton()
             button.text = topic
             button.callbackData = "set_topic:$topic"
