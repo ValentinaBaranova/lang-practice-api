@@ -26,13 +26,14 @@ spring:
 application:
   topics:
     - Presente
-    - Pretérito Indefinido
-    - Pretérito Imperfecto
-    - Pretérito Perfecto
-    - Futuro Simple
+    - Pretérito indefinido
+    - Pretérito imperfecto
+    - Pretérito perfecto
+    - Futuro simple
     - Imperativo
-    - Imperativo Negativo
-    - Subjuntivo Presente
+    - Imperativo negativo
+    - Subjuntivo presente
+    - Imperfecto de subjuntivo
   base-url: ${APPLICATION_BASE_URL:http://localhost:3000}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
