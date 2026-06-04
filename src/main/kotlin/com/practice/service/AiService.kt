@@ -118,7 +118,7 @@ open class AiService(
                 invalidResults.add(question.sourceText)
                 logger.warning(
                     "AI generated invalid sentences for topic '$topic': " +
-                        "${question.sourceText} (expected: ${question.correctAnswer}, got: ${aiAnswer ?: "null"})"
+                        "${question.sourceText} (expected: ${question.gaps.firstOrNull()?.correctAnswer}, got: ${aiAnswer ?: "null"})"
                 )
             } else {
                 validResults.add(question.sourceText)

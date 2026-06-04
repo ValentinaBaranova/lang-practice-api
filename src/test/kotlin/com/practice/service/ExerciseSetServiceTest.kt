@@ -53,6 +53,86 @@ class ExerciseSetServiceTest {
         assertThat(response.shareSlug).doesNotContain("--")
     }
 
+    @Test
+    fun `test parseBulkInput with multiple gaps`() {
+        val bulkInput = "Cuando yo era chico, siempre [jugaba] (yo, jugar) en la plaza. Cuando tu eres chico, siempre [estudiabas] (vos, estudiar)"
+        val type = ExerciseType.FILL_GAP_TEXT
+        
+        val questions = exerciseSetService.parseBulkInput(bulkInput, type)
+        
+        assertThat(questions).hasSize(1)
+        val question = questions[0]
+        assertThat(question.gaps).hasSize(2)
+        assertThat(question.gaps[0].correctAnswer).isEqualTo("jugaba")
+        assertThat(question.gaps[1].correctAnswer).isEqualTo("estudiabas")
+        assertThat(question.prompt).isEqualTo("Cuando yo era chico, siempre ___ (yo, jugar) en la plaza. Cuando tu eres chico, siempre ___ (vos, estudiar)")
+    }
+
+    @Test
+    fun `test isAnswerCorrect with multiple gaps`() {
+        val bulkInput = "Yo [estudio] (yo, estudiar). Vos [trabajás] (vos, trabajar)."
+        val type = ExerciseType.FILL_GAP_TEXT
+        val question = exerciseSetService.parseBulkInput(bulkInput, type)[0]
+        
+        // Full correct sentence
+        assertThat(exerciseSetService.isAnswerCorrect(question, "Yo estudio (yo, estudiar). Vos trabajás (vos, trabajar).")).isTrue()
+        
+        // Incorrect full sentence
+        assertThat(exerciseSetService.isAnswerCorrect(question, "Yo estudio (yo, estudiar). Vos nado (vos, trabajar).")).isFalse()
+        
+        // Only first gap (should be false now because it's multiple gaps)
+        assertThat(exerciseSetService.isAnswerCorrect(question, "estudio")).isFalse()
+    }
+
+    @Test
+    fun `test isAnswerCorrect with list of GapAnswerRequest`() {
+        val bulkInput = "Yo [estudio] (yo, estudiar). Vos [trabajás] (vos, trabajar)."
+        val type = ExerciseType.FILL_GAP_TEXT
+        val question = exerciseSetService.parseBulkInput(bulkInput, type)[0]
+        
+        val correctAnswers = listOf(
+            com.practice.dto.GapAnswerRequest(0, "estudio"),
+            com.practice.dto.GapAnswerRequest(1, "trabajás")
+        )
+        assertThat(exerciseSetService.isAnswerCorrect(question, correctAnswers)).isTrue()
+        
+        val incorrectAnswers = listOf(
+            com.practice.dto.GapAnswerRequest(0, "estudio"),
+            com.practice.dto.GapAnswerRequest(1, "nado")
+        )
+        assertThat(exerciseSetService.isAnswerCorrect(question, incorrectAnswers)).isFalse()
+
+        val missingAnswers = listOf(
+            com.practice.dto.GapAnswerRequest(0, "estudio")
+        )
+        assertThat(exerciseSetService.isAnswerCorrect(question, missingAnswers)).isFalse()
+    }
+
+    @Test
+    fun `test isAnswerCorrect prefers gaps`() {
+        val question = com.practice.domain.ExerciseQuestion(
+            id = UUID.randomUUID(),
+            prompt = "Yo ___ la puerta.",
+            sourceText = "Yo [Abrí] la puerta.",
+            gaps = listOf(com.practice.domain.Gap(0, "Abrí"))
+        )
+        
+        // Should be correct because gaps says "Abrí"
+        assertThat(exerciseSetService.isAnswerCorrect(question, "abrí")).isTrue()
+    }
+
+    @Test
+    fun `test isAnswerCorrect works`() {
+        val question = com.practice.domain.ExerciseQuestion(
+            id = UUID.randomUUID(),
+            prompt = "Yo ___ la puerta.",
+            sourceText = "Yo [Abrí] la puerta.",
+            gaps = listOf(com.practice.domain.Gap(0, "Abrí"))
+        )
+        
+        assertThat(exerciseSetService.isAnswerCorrect(question, "abrí")).isTrue()
+    }
+
     private fun setupMockSave() {
         `when`(exerciseSetRepository.save(any())).thenAnswer {
             val set = it.arguments[0] as ExerciseSet

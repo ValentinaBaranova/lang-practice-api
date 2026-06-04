@@ -24,8 +24,11 @@ data class AttemptCreateRequest(
 data class QuestionAnswerRequest(
     @field:NotNull(message = "Question ID is required")
     val questionId: UUID,
+    val answers: List<GapAnswerRequest>
+)
 
-    @field:NotBlank(message = "Answer is required")
+data class GapAnswerRequest(
+    val index: Int,
     val answer: String
 )
 
@@ -33,6 +36,11 @@ data class AttemptQuestionResponse(
     val id: UUID,
     val attemptId: UUID,
     val questionId: UUID,
+    val answers: List<GapAnswerResponse>
+)
+
+data class GapAnswerResponse(
+    val index: Int,
     val answer: String,
     val isCorrect: Boolean
 )

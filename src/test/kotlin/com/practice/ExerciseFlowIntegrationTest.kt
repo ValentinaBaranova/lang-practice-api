@@ -48,11 +48,11 @@ class ExerciseFlowIntegrationTest : IntegrationTestBase() {
         val questionId = exerciseSet.questions[0].id!!
         val answerRequest = QuestionAnswerRequest(
             questionId = questionId,
-            answer = "The quick brown fox."
+            answers = listOf(GapAnswerRequest(0, "The quick brown fox."))
         )
         val submitAnswerResponse = restTemplate.postForEntity(url("/api/attempts/${attempt.id}/answers"), answerRequest, AttemptQuestionResponse::class.java)
         assertThat(submitAnswerResponse.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(submitAnswerResponse.body?.isCorrect).isTrue()
+        assertThat(submitAnswerResponse.body?.answers?.all { it.isCorrect }).isTrue()
 
         // 5. Verify attempt progress
         val updatedAttemptResponse = restTemplate.getForEntity(url("/api/attempts/${attempt.id}"), AttemptResponse::class.java)
@@ -87,11 +87,11 @@ class ExerciseFlowIntegrationTest : IntegrationTestBase() {
         val questionId = exerciseSet.questions[0].id!!
         val answerRequest = QuestionAnswerRequest(
             questionId = questionId,
-            answer = "The slow brown fox."
+            answers = listOf(GapAnswerRequest(0, "The slow brown fox."))
         )
         val submitAnswerResponse = restTemplate.postForEntity(url("/api/attempts/${attempt.id}/answers"), answerRequest, AttemptQuestionResponse::class.java)
         assertThat(submitAnswerResponse.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(submitAnswerResponse.body?.isCorrect).isFalse()
+        assertThat(submitAnswerResponse.body?.answers?.all { it.isCorrect }).isFalse()
 
         // 4. Verify attempt progress
         val updatedAttemptResponse = restTemplate.getForEntity(url("/api/attempts/${attempt.id}"), AttemptResponse::class.java)
@@ -124,18 +124,18 @@ class ExerciseFlowIntegrationTest : IntegrationTestBase() {
         val questionId = exerciseSet.questions[0].id!!
         val answerRequest1 = QuestionAnswerRequest(
             questionId = questionId,
-            answer = " quick "
+            answers = listOf(GapAnswerRequest(0, " quick "))
         )
         val response1 = restTemplate.postForEntity(url("/api/attempts/${attempt.id}/answers"), answerRequest1, AttemptQuestionResponse::class.java)
-        assertThat(response1.body?.isCorrect).isTrue()
+        assertThat(response1.body?.answers?.all { it.isCorrect }).isTrue()
 
         // 4. Submit answer with spaces for the full sentence
         val answerRequest2 = QuestionAnswerRequest(
             questionId = questionId,
-            answer = "  The  quick  brown  fox.  "
+            answers = listOf(GapAnswerRequest(0, "  The  quick  brown  fox.  "))
         )
         val response2 = restTemplate.postForEntity(url("/api/attempts/${attempt.id}/answers"), answerRequest2, AttemptQuestionResponse::class.java)
-        assertThat(response2.body?.isCorrect).isTrue()
+        assertThat(response2.body?.answers?.all { it.isCorrect }).isTrue()
     }
 
     @Test

@@ -24,13 +24,16 @@ data class ExerciseQuestion(
     @field:NotBlank(message = "Prompt is required")
     val prompt: String,
 
-    @field:NotBlank(message = "Correct answer is required")
-    val correctAnswer: String,
-
     @field:NotBlank(message = "Source text is required")
     val sourceText: String,
 
-    val options: List<String>? = null
+    val options: List<String>? = null,
+    val gaps: List<GapDto>? = null
+)
+
+data class GapDto(
+    val index: Int,
+    val correctAnswer: String
 )
 
 data class ExerciseSetCreateRequest(

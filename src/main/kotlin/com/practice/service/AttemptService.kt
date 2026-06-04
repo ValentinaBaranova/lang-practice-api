@@ -1,12 +1,7 @@
 package com.practice.service
 
 import com.practice.domain.Attempt
-import com.practice.domain.AttemptQuestion
-import com.practice.dto.AttemptCreateRequest
-import com.practice.dto.AttemptQuestionResponse
-import com.practice.dto.AttemptResponse
-import com.practice.dto.QuestionAnswerRequest
-import com.practice.repository.AttemptQuestionRepository
+import com.practice.dto.*
 import com.practice.repository.AttemptRepository
 import com.practice.repository.ExerciseSetRepository
 import org.springframework.stereotype.Service
@@ -16,7 +11,6 @@ import java.util.UUID
 @Service
 class AttemptService(
     private val attemptRepository: AttemptRepository,
-    private val attemptQuestionRepository: AttemptQuestionRepository,
     private val exerciseSetRepository: ExerciseSetRepository,
     private val exerciseSetService: ExerciseSetService
 ) {
@@ -26,10 +20,14 @@ class AttemptService(
         val exerciseSet = exerciseSetRepository.findById(request.exerciseSetId)
             .orElseThrow { NoSuchElementException("Exercise set not found with id: ${request.exerciseSetId}") }
 
+        val totalQuestions = exerciseSet.questions.sumOf { 
+            if (it.gaps.isEmpty()) 1 else it.gaps.size 
+        }
+
         val attempt = Attempt(
             exerciseSetId = exerciseSet.id!!,
             studentName = request.studentName,
-            totalQuestions = exerciseSet.questions.size,
+            totalQuestions = totalQuestions,
             answeredQuestions = 0,
             correctAnswers = 0
         )
@@ -48,25 +46,34 @@ class AttemptService(
         val question = exerciseSet.questions.find { it.id == request.questionId }
             .let { it ?: throw NoSuchElementException("Question not found with id: ${request.questionId}") }
 
-        val isCorrect = exerciseSetService.isAnswerCorrect(question, request.answer)
+        val questionGapCount = if (question.gaps.isEmpty()) 1 else question.gaps.size
+        var correctCount = 0
 
-        val attemptQuestion = AttemptQuestion(
-            attemptId = attemptId,
-            questionId = request.questionId,
-            answer = request.answer,
-            isCorrect = isCorrect
-        )
+        val gapAnswerResponses = request.answers.map { answerReq ->
+            val isCorrect = if (question.gaps.size <= 1) {
+                exerciseSetService.isAnswerCorrect(question, answerReq.answer)
+            } else {
+                val gap = question.gaps.find { it.index == answerReq.index }
+                gap != null && exerciseSetService.normalizeText(gap.correctAnswer)
+                    .equals(exerciseSetService.normalizeText(answerReq.answer), ignoreCase = true)
+            }
 
-        val savedQuestion = attemptQuestionRepository.save(attemptQuestion)
+            if (isCorrect) correctCount++
+
+            GapAnswerResponse(answerReq.index, answerReq.answer, isCorrect)
+        }
 
         // Update attempt statistics
-        attempt.answeredQuestions = (attempt.answeredQuestions ?: 0) + 1
-        if (isCorrect) {
-            attempt.correctAnswers = (attempt.correctAnswers ?: 0) + 1
-        }
+        attempt.answeredQuestions = (attempt.answeredQuestions ?: 0) + questionGapCount
+        attempt.correctAnswers = (attempt.correctAnswers ?: 0) + correctCount
         attemptRepository.save(attempt)
 
-        return savedQuestion.toResponse()
+        return AttemptQuestionResponse(
+            id = UUID.randomUUID(),
+            attemptId = attemptId,
+            questionId = request.questionId,
+            answers = gapAnswerResponses
+        )
     }
 
 
@@ -77,11 +84,6 @@ class AttemptService(
             .orElseThrow { NoSuchElementException("Attempt not found with id: $id") }
     }
 
-    @Transactional(readOnly = true)
-    fun getAttemptQuestions(attemptId: UUID): List<AttemptQuestionResponse> {
-        return attemptQuestionRepository.findAllByAttemptId(attemptId)
-            .map { it.toResponse() }
-    }
 
     @Transactional(readOnly = true)
     fun getAttemptsByExerciseSetId(exerciseSetId: UUID): List<AttemptResponse> {
@@ -98,11 +100,4 @@ class AttemptService(
         correctAnswers = this.correctAnswers
     )
 
-    private fun AttemptQuestion.toResponse() = AttemptQuestionResponse(
-        id = this.id!!,
-        attemptId = this.attemptId,
-        questionId = this.questionId,
-        answer = this.answer,
-        isCorrect = this.isCorrect
-    )
 }

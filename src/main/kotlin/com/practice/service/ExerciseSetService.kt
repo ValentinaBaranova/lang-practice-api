@@ -4,6 +4,7 @@ import com.practice.domain.ExerciseQuestion
 import com.practice.domain.ExerciseSet
 import com.practice.domain.ExerciseType
 import com.practice.domain.ExerciseVisibility
+import com.practice.domain.Gap
 import com.practice.domain.Teacher
 import com.practice.dto.ExerciseSetCreateRequest
 import com.practice.dto.ExerciseSetResponse
@@ -102,13 +103,15 @@ class ExerciseSetService(
                 val answerRegex = "\\[(.*?)]".toRegex()
                 val optionsRegex = "\\{+([^{}]*?)}".toRegex()
                 
-                val answerMatch = answerRegex.find(sourceText)
+                val answerMatches = answerRegex.findAll(sourceText).toList()
                 
-                if (answerMatch == null) {
+                if (answerMatches.isEmpty()) {
                     if (throwOnError) errors.add("Line ${index + 1}: Each line must contain at least one answer in []: $sourceText")
                     null
                 } else {
-                    val correctAnswer = answerMatch.groupValues[1]
+                    val gaps = answerMatches.mapIndexed { matchIndex, matchResult ->
+                        Gap(index = matchIndex, correctAnswer = matchResult.groupValues[1])
+                    }
                     val optionsMatch = optionsRegex.find(sourceText)
                     val options = optionsMatch?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
 
@@ -120,13 +123,13 @@ class ExerciseSetService(
                     }
 
                     if (type == com.practice.domain.ExerciseType.MULTIPLE_CHOICE) {
-                        if (answerRegex.findAll(sourceText).count() > 1) {
+                        if (answerMatches.size > 1) {
                             if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have exactly one answer in []: $sourceText")
                         }
                         if (options.size < 2) {
                             if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have at least 2 options in {}: $sourceText")
                         }
-                        if (!options.contains(correctAnswer)) {
+                        if (!options.contains(gaps.first().correctAnswer)) {
                             if (throwOnError) errors.add("Line ${index + 1}: Options must contain the correct answer: $sourceText")
                         }
                     }
@@ -134,9 +137,9 @@ class ExerciseSetService(
                     ExerciseQuestion(
                         id = UUID.randomUUID(),
                         prompt = prompt,
-                        correctAnswer = correctAnswer,
                         sourceText = sourceText,
-                        options = options
+                        options = options,
+                        gaps = gaps
                     )
                 }
             }
@@ -156,17 +159,36 @@ class ExerciseSetService(
 
     fun isAnswerCorrect(question: ExerciseQuestion, answer: String): Boolean {
         val normalizedAnswer = normalizeText(answer)
-        val normalizedCorrectAnswer = normalizeText(question.correctAnswer)
         val normalizedSourceText = normalizeText(question.sourceText
             .replace("[", "")
             .replace("]", "")
             .replace(Regex("\\{.*?\\}"), ""))
 
-        return normalizedCorrectAnswer.equals(normalizedAnswer, ignoreCase = true) ||
-                normalizedSourceText.equals(normalizedAnswer, ignoreCase = true)
+        if (normalizedSourceText.equals(normalizedAnswer, ignoreCase = true)) {
+            return true
+        }
+
+        val correctAnswerToUse = question.gaps.singleOrNull()?.correctAnswer
+
+        if (correctAnswerToUse != null) {
+            val normalizedCorrectAnswer = normalizeText(correctAnswerToUse)
+            return normalizedCorrectAnswer.equals(normalizedAnswer, ignoreCase = true)
+        }
+
+        return false
     }
 
-    private fun normalizeText(text: String): String {
+    fun isAnswerCorrect(question: ExerciseQuestion, answers: List<com.practice.dto.GapAnswerRequest>): Boolean {
+        if (question.gaps.isEmpty()) return false
+        if (question.gaps.size != answers.size) return false
+        val providedAnswers = answers.associate { it.index to it.answer }
+        return question.gaps.all { gap ->
+            val providedAnswer = providedAnswers[gap.index] ?: return@all false
+            normalizeText(gap.correctAnswer).equals(normalizeText(providedAnswer), ignoreCase = true)
+        }
+    }
+
+    internal fun normalizeText(text: String): String {
         return Normalizer.normalize(text.trim(), Normalizer.Form.NFD)
             .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
             .replace("\\s+".toRegex(), " ")
@@ -208,16 +230,16 @@ class ExerciseSetService(
     private fun ExerciseQuestionDto.toDomain() = ExerciseQuestion(
         id = this.id ?: UUID.randomUUID(),
         prompt = this.prompt,
-        correctAnswer = this.correctAnswer,
         sourceText = this.sourceText,
-        options = this.options ?: emptyList()
+        options = this.options ?: emptyList(),
+        gaps = this.gaps?.map { Gap(it.index, it.correctAnswer) } ?: emptyList()
     )
 }
 
 internal fun com.practice.domain.ExerciseQuestion.toDto() = ExerciseQuestionDto(
     id = this.id,
     prompt = this.prompt,
-    correctAnswer = this.correctAnswer,
     sourceText = this.sourceText,
-    options = if (this.options.isNotEmpty()) this.options else null
+    options = if (this.options.isNotEmpty()) this.options else null,
+    gaps = if (this.gaps.isNotEmpty()) this.gaps.map { com.practice.dto.GapDto(it.index, it.correctAnswer) } else null
 )

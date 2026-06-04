@@ -14,6 +14,6 @@ class TopicsControllerTest : IntegrationTestBase() {
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         val topics = response.body as List<*>
         assertThat(topics).isNotEmpty
-        assertThat(topics).contains("Presente", "Pretérito Indefinido")
+        assertThat(topics).contains("Presente", "Pretérito indefinido")
     }
 }

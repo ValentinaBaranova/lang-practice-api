@@ -29,7 +29,7 @@ class MultipleChoiceExerciseTest : IntegrationTestBase() {
         
         val question = exerciseSet.questions[0]
         assertThat(question.prompt).isEqualTo("Mañana ____ al cine.")
-        assertThat(question.correctAnswer).isEqualTo("iremos")
+        assertThat(question.gaps?.get(0)?.correctAnswer).isEqualTo("iremos")
         assertThat(question.options).containsExactly("vamos", "iremos", "fuimos", "íbamos")
 
         // Retrieve it
@@ -52,7 +52,7 @@ class MultipleChoiceExerciseTest : IntegrationTestBase() {
         val exerciseSet = createResponse.body!!
         val question = exerciseSet.questions[0]
         assertThat(question.prompt).isEqualTo("How are you? ___")
-        assertThat(question.correctAnswer).isEqualTo("Fine")
+        assertThat(question.gaps?.get(0)?.correctAnswer).isEqualTo("Fine")
         assertThat(question.options).containsExactly("Fine", "Bad", "Okay")
     }
 
