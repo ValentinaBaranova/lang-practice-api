@@ -1,7 +1,9 @@
 package com.practice.domain
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.util.UUID
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class ExerciseQuestion(
     val id: UUID,
     val prompt: String,
