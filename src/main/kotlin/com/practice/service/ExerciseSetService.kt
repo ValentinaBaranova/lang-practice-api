@@ -102,18 +102,43 @@ class ExerciseSetService(
                 val sourceText = line.trim()
                 val answerRegex = "\\[(.*?)]".toRegex()
                 val optionsRegex = "\\{+([^{}]*?)}".toRegex()
-                
+
                 val answerMatches = answerRegex.findAll(sourceText).toList()
-                
-                if (answerMatches.isEmpty()) {
-                    if (throwOnError) errors.add("Line ${index + 1}: Each line must contain at least one answer in []: $sourceText")
+                val optionsMatch = optionsRegex.find(sourceText)
+                val rawOptions = optionsMatch?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
+
+                // Support no-gap format for MULTIPLE_CHOICE: correct answer marked with * in options
+                val hasStarredOption = rawOptions.any { it.startsWith("*") }
+                val isNoGapMultipleChoice = type == com.practice.domain.ExerciseType.MULTIPLE_CHOICE
+                        && answerMatches.isEmpty()
+                        && hasStarredOption
+
+                if (isNoGapMultipleChoice) {
+                    val correctAnswer = rawOptions.first { it.startsWith("*") }.removePrefix("*").trim()
+                    val options = rawOptions.map { it.removePrefix("*").trim() }
+                    val gaps = listOf(Gap(index = 0, correctAnswer = correctAnswer))
+
+                    val prompt = sourceText.replace(optionsRegex, "").replace("\\s+".toRegex(), " ").trim()
+
+                    if (options.size < 2) {
+                        if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have at least 2 options in {}: $sourceText")
+                    }
+
+                    ExerciseQuestion(
+                        id = UUID.randomUUID(),
+                        prompt = prompt,
+                        sourceText = sourceText,
+                        options = options,
+                        gaps = gaps
+                    )
+                } else if (answerMatches.isEmpty()) {
+                    if (throwOnError) errors.add("Line ${index + 1}: Each line must contain at least one answer in [] or a starred option (*) in {}: $sourceText")
                     null
                 } else {
                     val gaps = answerMatches.mapIndexed { matchIndex, matchResult ->
                         Gap(index = matchIndex, correctAnswer = matchResult.groupValues[1])
                     }
-                    val optionsMatch = optionsRegex.find(sourceText)
-                    val options = optionsMatch?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
+                    val options = rawOptions
 
                     var prompt = sourceText.replace(optionsRegex, "").replace("\\s+".toRegex(), " ").trim()
                     if (prompt.contains("___") || prompt.contains("____")) {

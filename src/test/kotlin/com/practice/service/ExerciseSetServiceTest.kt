@@ -133,6 +133,53 @@ class ExerciseSetServiceTest {
         assertThat(exerciseSetService.isAnswerCorrect(question, "abrí")).isTrue()
     }
 
+    @Test
+    fun `test parseBulkInput multiple choice with starred option no gap`() {
+        val bulkInput = "Question text? {option1|*option2|option3}"
+        val type = ExerciseType.MULTIPLE_CHOICE
+
+        val question = exerciseSetService.parseBulkInput(bulkInput, type)[0]
+
+        assertThat(question.prompt).isEqualTo("Question text?")
+        assertThat(question.options).containsExactly("option1", "option2", "option3")
+        assertThat(question.gaps).hasSize(1)
+        assertThat(question.gaps[0].correctAnswer).isEqualTo("option2")
+    }
+
+    @Test
+    fun `test parseBulkInput multiple choice with starred option preserves sourceText`() {
+        val bulkInput = "Which color is the sky? {red|green|*blue}"
+        val type = ExerciseType.MULTIPLE_CHOICE
+
+        val question = exerciseSetService.parseBulkInput(bulkInput, type)[0]
+
+        assertThat(question.sourceText).isEqualTo("Which color is the sky? {red|green|*blue}")
+        assertThat(question.options).containsExactly("red", "green", "blue")
+        assertThat(question.gaps[0].correctAnswer).isEqualTo("blue")
+    }
+
+    @Test
+    fun `test parseBulkInput multiple choice starred option requires at least 2 options`() {
+        val bulkInput = "Question? {*only}"
+        val type = ExerciseType.MULTIPLE_CHOICE
+
+        val exception = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException::class.java) {
+            exerciseSetService.parseBulkInput(bulkInput, type)
+        }
+        assertThat(exception.message).contains("at least 2 options")
+    }
+
+    @Test
+    fun `test parseBulkInput multiple choice with bracket format still works`() {
+        val bulkInput = "Text with [answer] {option1|answer|option3}"
+        val type = ExerciseType.MULTIPLE_CHOICE
+
+        val question = exerciseSetService.parseBulkInput(bulkInput, type)[0]
+
+        assertThat(question.gaps[0].correctAnswer).isEqualTo("answer")
+        assertThat(question.options).containsExactly("option1", "answer", "option3")
+    }
+
     private fun setupMockSave() {
         `when`(exerciseSetRepository.save(any())).thenAnswer {
             val set = it.arguments[0] as ExerciseSet
