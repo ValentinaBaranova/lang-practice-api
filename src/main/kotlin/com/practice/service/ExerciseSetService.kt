@@ -235,21 +235,18 @@ class ExerciseSetService(
         return isAnswerCorrect(request.question.toDomain(), request.answer)
     }
 
-    fun isAnswerCorrect(question: ExerciseQuestion, answer: String): Boolean {
-        val normalizedAnswer = normalizeText(answer)
-        val normalizedSourceText = normalizeText(question.sourceText
-            .replace("[", "")
-            .replace("]", "")
-            .replace(Regex("\\{.*?\\}"), ""))
-
-        if (normalizedSourceText.equals(normalizedAnswer, ignoreCase = true)) {
-            return true
+    fun isAnswerCorrect(question: ExerciseQuestion, answer: String, gapIndex: Int? = null): Boolean {
+        val gap = if (gapIndex != null) {
+            question.gaps.find { it.index == gapIndex }
+        } else {
+            question.gaps.singleOrNull()
         }
 
-        val correctAnswerToUse = question.gaps.singleOrNull()?.correctAnswer
+        val correctAnswerToUse = gap?.correctAnswer
 
         if (correctAnswerToUse != null) {
             val normalizedCorrectAnswer = normalizeText(correctAnswerToUse)
+            val normalizedAnswer = normalizeText(answer)
             return normalizedCorrectAnswer.equals(normalizedAnswer, ignoreCase = true)
         }
 

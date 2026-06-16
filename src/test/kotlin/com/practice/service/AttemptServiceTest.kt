@@ -54,14 +54,19 @@ class AttemptServiceTest : IntegrationTestBase() {
         ))
 
         // When
-        val request = QuestionAnswerRequest(questionId = questionId, answers = listOf(GapAnswerRequest(0, "abri")))
+        val request = QuestionAnswerRequest(questionId = questionId, answers = listOf(GapAnswerRequest(0, "Abri")))
         val response = attemptService.submitAnswer(attempt.id!!, request)
 
         // Then
         assertTrue(response.answers.all { it.isCorrect })
+        
+        // And when lowercase
+        val requestLower = QuestionAnswerRequest(questionId = questionId, answers = listOf(GapAnswerRequest(0, "abri")))
+        val responseLower = attemptService.submitAnswer(attempt.id!!, requestLower)
+        assertTrue(responseLower.answers.all { it.isCorrect })
         val updatedAttempt = attemptRepository.findById(attempt.id!!).get()
-        assertEquals(1, updatedAttempt.answeredQuestions)
-        assertEquals(1, updatedAttempt.correctAnswers)
+        assertEquals(2, updatedAttempt.answeredQuestions)
+        assertEquals(2, updatedAttempt.correctAnswers)
     }
 
     @Test
@@ -135,8 +140,8 @@ class AttemptServiceTest : IntegrationTestBase() {
             correctAnswers = 0
         ))
 
+        assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, listOf(GapAnswerRequest(0, "AeIoUn")))).answers.all { it.isCorrect })
         assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, listOf(GapAnswerRequest(0, "aeioun")))).answers.all { it.isCorrect })
-        assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, listOf(GapAnswerRequest(0, "AEIOUN")))).answers.all { it.isCorrect })
     }
 
     @Test
@@ -163,7 +168,9 @@ class AttemptServiceTest : IntegrationTestBase() {
             correctAnswers = 0
         ))
 
-        assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, listOf(GapAnswerRequest(0, "  The  quick  brown  fox.  ")))).answers.all { it.isCorrect })
+        // Should NOT accept full sentence anymore
+        assertFalse(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, listOf(GapAnswerRequest(0, "  The  quick  brown  fox.  ")))).answers.all { it.isCorrect })
+        // Should accept gap word with proper spaces
         assertTrue(attemptService.submitAnswer(attempt.id!!, QuestionAnswerRequest(questionId, listOf(GapAnswerRequest(0, "  quick  ")))).answers.all { it.isCorrect })
     }
 

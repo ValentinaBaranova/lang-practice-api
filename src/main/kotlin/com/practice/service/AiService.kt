@@ -26,6 +26,7 @@ open class AiService(
 
         private const val BASE_PROMPT = """
             Generate [AMOUNT] sentences in Argentine Spanish about topic "[TOPIC]" for [PRACTICE_TYPE].                        
+            Don't add line numeration.
             [FORMAT_INSTRUCTIONS]
             If the answer requires a reflexive or object pronoun, include it in the hint.
             Focus on common everyday situations and Argentine vocabulary.
@@ -142,7 +143,7 @@ open class AiService(
         if (invalidResults.isNotEmpty()) {
             logger.warning(
                 "AI generated ${invalidResults.size} invalid sentences " +
-                    "from ${generatedExercises.length} for topic '$topic'"
+                    "from ${amount} for topic '$topic'"
             )
         }
 

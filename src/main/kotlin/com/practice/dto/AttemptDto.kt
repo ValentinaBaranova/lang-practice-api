@@ -42,5 +42,6 @@ data class AttemptQuestionResponse(
 data class GapAnswerResponse(
     val index: Int,
     val answer: String,
-    val isCorrect: Boolean
+    val isCorrect: Boolean,
+    val expectedAnswer: String? = null
 )

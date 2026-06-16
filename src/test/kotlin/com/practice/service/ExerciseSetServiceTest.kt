@@ -74,8 +74,8 @@ class ExerciseSetServiceTest {
         val type = ExerciseType.FILL_GAP_TEXT
         val question = exerciseSetService.parseBulkInput(bulkInput, type)[0]
         
-        // Full correct sentence
-        assertThat(exerciseSetService.isAnswerCorrect(question, "Yo estudio (yo, estudiar). Vos trabajás (vos, trabajar).")).isTrue()
+        // Full correct sentence should now be false (not comparing source text)
+        assertThat(exerciseSetService.isAnswerCorrect(question, "Yo estudio (yo, estudiar). Vos trabajás (vos, trabajar).")).isFalse()
         
         // Incorrect full sentence
         assertThat(exerciseSetService.isAnswerCorrect(question, "Yo estudio (yo, estudiar). Vos nado (vos, trabajar).")).isFalse()
@@ -117,8 +117,10 @@ class ExerciseSetServiceTest {
             gaps = listOf(com.practice.domain.Gap(0, "Abrí"))
         )
         
-        // Should be correct because gaps says "Abrí"
+        // Should be true because gaps says "Abrí" and we check case-insensitively
         assertThat(exerciseSetService.isAnswerCorrect(question, "abrí")).isTrue()
+        // Should be true with proper case too
+        assertThat(exerciseSetService.isAnswerCorrect(question, "Abrí")).isTrue()
     }
 
     @Test
@@ -130,6 +132,7 @@ class ExerciseSetServiceTest {
             gaps = listOf(com.practice.domain.Gap(0, "Abrí"))
         )
         
+        assertThat(exerciseSetService.isAnswerCorrect(question, "Abrí")).isTrue()
         assertThat(exerciseSetService.isAnswerCorrect(question, "abrí")).isTrue()
     }
 

@@ -50,17 +50,20 @@ class AttemptService(
         var correctCount = 0
 
         val gapAnswerResponses = request.answers.map { answerReq ->
-            val isCorrect = if (question.gaps.size <= 1) {
-                exerciseSetService.isAnswerCorrect(question, answerReq.answer)
-            } else {
-                val gap = question.gaps.find { it.index == answerReq.index }
-                gap != null && exerciseSetService.normalizeText(gap.correctAnswer)
-                    .equals(exerciseSetService.normalizeText(answerReq.answer), ignoreCase = true)
-            }
+            // Resolve the relevant gap once
+            val gap = question.gaps.singleOrNull() ?: question.gaps.find { it.index == answerReq.index }
+            val expectedAnswer = gap?.correctAnswer
+            val isCorrect = exerciseSetService.isAnswerCorrect(question, answerReq.answer, answerReq.index)
 
             if (isCorrect) correctCount++
 
-            GapAnswerResponse(answerReq.index, answerReq.answer, isCorrect)
+            // Always include expectedAnswer in the response; UI decides when to display it.
+            GapAnswerResponse(
+                answerReq.index,
+                answerReq.answer,
+                isCorrect,
+                expectedAnswer = expectedAnswer
+            )
         }
 
         // Update attempt statistics

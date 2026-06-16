@@ -41,8 +41,8 @@ class AiServiceTest {
         val generation2 = mock(Generation::class.java)
         val assistantMessage2 = mock(org.springframework.ai.chat.messages.AssistantMessage::class.java)
 
-        // AI returns full sentence (matches normalized source text)
-        `when`(assistantMessage2.text).thenReturn("Él hablo español.")
+        // AI returns only missing word
+        `when`(assistantMessage2.text).thenReturn("hablo")
         `when`(generation2.output).thenReturn(assistantMessage2)
         `when`(chatResponse2.result).thenReturn(generation2)
 
@@ -72,8 +72,8 @@ class AiServiceTest {
         val generation2 = mock(Generation::class.java)
         val assistantMessage2 = mock(org.springframework.ai.chat.messages.AssistantMessage::class.java)
 
-        // AI returns full sentence (matches normalized source text)
-        `when`(assistantMessage2.text).thenReturn("Yo hablo español.")
+        // AI returns only missing word
+        `when`(assistantMessage2.text).thenReturn("Hablo")
         `when`(generation2.output).thenReturn(assistantMessage2)
         `when`(chatResponse2.result).thenReturn(generation2)
 
@@ -103,8 +103,8 @@ class AiServiceTest {
         val generation2 = mock(Generation::class.java)
         val assistantMessage2 = mock(org.springframework.ai.chat.messages.AssistantMessage::class.java)
         
-        // AI solves them with full sentences: 1 and 2 are correct, 3 is different, 4 is correct
-        `when`(assistantMessage2.text).thenReturn("Sentence 1 answer1 (hint1)\nSentence 2 answer2 (hint2)\nSentence 3 correct_answer3 (hint3)\nSentence 4 answer4 (hint4)")
+        // AI solves them with missing words
+        `when`(assistantMessage2.text).thenReturn("answer1\nanswer2\ncorrect_answer3\nanswer4")
         `when`(generation2.output).thenReturn(assistantMessage2)
         `when`(chatResponse2.result).thenReturn(generation2)
 
@@ -150,7 +150,7 @@ class AiServiceTest {
         val generation2 = mock(Generation::class.java)
         val assistantMessage2 = mock(org.springframework.ai.chat.messages.AssistantMessage::class.java)
         
-        `when`(assistantMessage2.text).thenReturn("Yo hablo español.\nTu hablas español.")
+        `when`(assistantMessage2.text).thenReturn("hablo\nhablas")
         `when`(generation2.output).thenReturn(assistantMessage2)
         `when`(chatResponse2.result).thenReturn(generation2)
 

@@ -48,7 +48,7 @@ class ExerciseFlowIntegrationTest : IntegrationTestBase() {
         val questionId = exerciseSet.questions[0].id!!
         val answerRequest = QuestionAnswerRequest(
             questionId = questionId,
-            answers = listOf(GapAnswerRequest(0, "The quick brown fox."))
+            answers = listOf(GapAnswerRequest(0, "quick"))
         )
         val submitAnswerResponse = restTemplate.postForEntity(url("/api/attempts/${attempt.id}/answers"), answerRequest, AttemptQuestionResponse::class.java)
         assertThat(submitAnswerResponse.statusCode).isEqualTo(HttpStatus.OK)
@@ -135,7 +135,7 @@ class ExerciseFlowIntegrationTest : IntegrationTestBase() {
             answers = listOf(GapAnswerRequest(0, "  The  quick  brown  fox.  "))
         )
         val response2 = restTemplate.postForEntity(url("/api/attempts/${attempt.id}/answers"), answerRequest2, AttemptQuestionResponse::class.java)
-        assertThat(response2.body?.answers?.all { it.isCorrect }).isTrue()
+        assertThat(response2.body?.answers?.all { it.isCorrect }).isFalse()
     }
 
     @Test
