@@ -29,9 +29,11 @@ application:
     - Pretérito indefinido
     - Pretérito imperfecto
     - Pretérito perfecto
+    - Pretérito indefinido y pretérito imperfecto
     - Futuro simple
     - Imperativo
     - Imperativo negativo
+    - Condicional simple
     - Subjuntivo presente
     - Imperfecto de subjuntivo
   base-url: ${APPLICATION_BASE_URL:http://localhost:3000}
