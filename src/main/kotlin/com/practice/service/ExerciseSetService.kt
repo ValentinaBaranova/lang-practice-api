@@ -97,115 +97,13 @@ class ExerciseSetService(
     internal fun parseBulkInput(bulkInput: String, type: ExerciseType, throwOnError: Boolean = true): List<ExerciseQuestion> {
         // Special handling for multiline fill-the-gap: treat whole input as a single question with multiple gaps
         if (type == ExerciseType.FILL_GAP_TEXT_MULTILINE) {
-            val sourceText = bulkInput.trim()
-
-            val answerRegex = "\\[(.*?)]".toRegex()
-            val optionsRegex = "\\{+([^{}]*?)}".toRegex()
-
-            val answerMatches = answerRegex.findAll(sourceText).toList()
-            val optionsMatch = optionsRegex.find(sourceText)
-            val rawOptions = optionsMatch?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
-
-            if (answerMatches.isEmpty()) {
-                if (throwOnError) throw IllegalArgumentException("Multiline exercise must contain at least one answer in []")
-                return emptyList()
-            }
-            if (rawOptions.isNotEmpty() && throwOnError) {
-                // Options are not supported for multiline mode
-                throw IllegalArgumentException("Multiline exercise does not support options {}: $sourceText")
-            }
-
-            val gaps = answerMatches.mapIndexed { matchIndex, matchResult ->
-                Gap(index = matchIndex, correctAnswer = matchResult.groupValues[1])
-            }
-
-            // Build prompt: preserve new lines, remove options, replace each [answer] with ___
-            var prompt = sourceText.replace(optionsRegex, "")
-            prompt = prompt.replace(answerRegex, "___")
-
-            val question = ExerciseQuestion(
-                id = java.util.UUID.randomUUID(),
-                prompt = prompt,
-                sourceText = sourceText,
-                options = emptyList(),
-                gaps = gaps
-            )
-            return listOf(question)
+            return parseMultilineInput(bulkInput, throwOnError)
         }
 
         val errors = mutableListOf<String>()
         val questions = bulkInput.lineSequence()
             .filter { it.isNotBlank() }
-            .mapIndexed { index, line ->
-                val sourceText = line.trim()
-                val answerRegex = "\\[(.*?)]".toRegex()
-                val optionsRegex = "\\{+([^{}]*?)}".toRegex()
-
-                val answerMatches = answerRegex.findAll(sourceText).toList()
-                val optionsMatch = optionsRegex.find(sourceText)
-                val rawOptions = optionsMatch?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
-
-                // Support no-gap format for MULTIPLE_CHOICE: correct answer marked with * in options
-                val hasStarredOption = rawOptions.any { it.startsWith("*") }
-                val isNoGapMultipleChoice = type == com.practice.domain.ExerciseType.MULTIPLE_CHOICE
-                        && answerMatches.isEmpty()
-                        && hasStarredOption
-
-                if (isNoGapMultipleChoice) {
-                    val correctAnswer = rawOptions.first { it.startsWith("*") }.removePrefix("*").trim()
-                    val options = rawOptions.map { it.removePrefix("*").trim() }
-                    val gaps = listOf(Gap(index = 0, correctAnswer = correctAnswer))
-
-                    val prompt = sourceText.replace(optionsRegex, "").replace("\\s+".toRegex(), " ").trim()
-
-                    if (options.size < 2) {
-                        if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have at least 2 options in {}: $sourceText")
-                    }
-
-                    ExerciseQuestion(
-                        id = UUID.randomUUID(),
-                        prompt = prompt,
-                        sourceText = sourceText,
-                        options = options,
-                        gaps = gaps
-                    )
-                } else if (answerMatches.isEmpty()) {
-                    if (throwOnError) errors.add("Line ${index + 1}: Each line must contain at least one answer in [] or a starred option (*) in {}: $sourceText")
-                    null
-                } else {
-                    val gaps = answerMatches.mapIndexed { matchIndex, matchResult ->
-                        Gap(index = matchIndex, correctAnswer = matchResult.groupValues[1])
-                    }
-                    val options = rawOptions
-
-                    var prompt = sourceText.replace(optionsRegex, "").replace("\\s+".toRegex(), " ").trim()
-                    if (prompt.contains("___") || prompt.contains("____")) {
-                        prompt = prompt.replace(answerRegex, "").replace("\\s+".toRegex(), " ").trim()
-                    } else {
-                        prompt = prompt.replace(answerRegex, "___").trim()
-                    }
-
-                    if (type == com.practice.domain.ExerciseType.MULTIPLE_CHOICE) {
-                        if (answerMatches.size > 1) {
-                            if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have exactly one answer in []: $sourceText")
-                        }
-                        if (options.size < 2) {
-                            if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have at least 2 options in {}: $sourceText")
-                        }
-                        if (!options.contains(gaps.first().correctAnswer)) {
-                            if (throwOnError) errors.add("Line ${index + 1}: Options must contain the correct answer: $sourceText")
-                        }
-                    }
-
-                    ExerciseQuestion(
-                        id = UUID.randomUUID(),
-                        prompt = prompt,
-                        sourceText = sourceText,
-                        options = options,
-                        gaps = gaps
-                    )
-                }
-            }
+            .mapIndexed { index, line -> parseSingleLine(index, line.trim(), type, throwOnError, errors) }
             .filterNotNull()
             .toList()
 
@@ -214,6 +112,123 @@ class ExerciseSetService(
         }
 
         return questions
+    }
+
+    private fun parseMultilineInput(bulkInput: String, throwOnError: Boolean): List<ExerciseQuestion> {
+        val sourceText = bulkInput.trim()
+
+        val answerMatches = ANSWER_REGEX.findAll(sourceText).toList()
+        val rawOptions = extractOptions(sourceText)
+
+        if (answerMatches.isEmpty()) {
+            if (throwOnError) throw IllegalArgumentException("Multiline exercise must contain at least one answer in []")
+            return emptyList()
+        }
+        // Options in multiline mode are ignored; always save an empty list of options
+
+        val gaps = answerMatches.mapIndexed { matchIndex, matchResult ->
+            Gap(index = matchIndex, correctAnswer = matchResult.groupValues[1])
+        }
+
+        // Build prompt: preserve new lines, remove options, replace each [answer] with ___
+        var prompt = sourceText.replace(OPTIONS_REGEX, "")
+        prompt = prompt.replace(ANSWER_REGEX, "___")
+
+        val question = ExerciseQuestion(
+            id = UUID.randomUUID(),
+            prompt = prompt,
+            sourceText = sourceText,
+            options = emptyList(),
+            gaps = gaps
+        )
+        return listOf(question)
+    }
+
+    private fun parseSingleLine(
+        index: Int,
+        sourceText: String,
+        type: ExerciseType,
+        throwOnError: Boolean,
+        errors: MutableList<String>
+    ): ExerciseQuestion? {
+        val answers = extractAnswers(sourceText)
+        val rawOptions = extractOptions(sourceText)
+
+        // Support no-gap format for MULTIPLE_CHOICE: correct answer marked with * in options
+        val hasStarredOption = rawOptions.any { it.startsWith("*") }
+        val isNoGapMultipleChoice = type == ExerciseType.MULTIPLE_CHOICE && answers.isEmpty() && hasStarredOption
+
+        return if (isNoGapMultipleChoice) {
+            val correctAnswer = rawOptions.first { it.startsWith("*") }.removePrefix("*").trim()
+            val options = rawOptions.map { it.removePrefix("*").trim() }
+            val gaps = listOf(Gap(index = 0, correctAnswer = correctAnswer))
+
+            val prompt = buildPromptWithoutAnswers(sourceText)
+
+            if (options.size < 2) {
+                if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have at least 2 options in {}: $sourceText")
+            }
+
+            ExerciseQuestion(
+                id = UUID.randomUUID(),
+                prompt = prompt,
+                sourceText = sourceText,
+                options = options,
+                gaps = gaps
+            )
+        } else if (answers.isEmpty()) {
+            if (throwOnError) errors.add("Line ${index + 1}: Each line must contain at least one answer in [] or a starred option (*) in {}: $sourceText")
+            null
+        } else {
+            val gaps = answers.mapIndexed { matchIndex, correct -> Gap(index = matchIndex, correctAnswer = correct) }
+            val options = rawOptions
+
+            val prompt = buildPromptWithAnswers(sourceText)
+
+            if (type == ExerciseType.MULTIPLE_CHOICE) {
+                if (answers.size > 1) {
+                    if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have exactly one answer in []: $sourceText")
+                }
+                if (options.size < 2) {
+                    if (throwOnError) errors.add("Line ${index + 1}: Multiple choice exercise must have at least 2 options in {}: $sourceText")
+                }
+                if (!options.contains(gaps.first().correctAnswer)) {
+                    if (throwOnError) errors.add("Line ${index + 1}: Options must contain the correct answer: $sourceText")
+                }
+            }
+
+            ExerciseQuestion(
+                id = UUID.randomUUID(),
+                prompt = prompt,
+                sourceText = sourceText,
+                options = options,
+                gaps = gaps
+            )
+        }
+    }
+
+    private fun extractAnswers(text: String): List<String> =
+        ANSWER_REGEX.findAll(text).map { it.groupValues[1] }.toList()
+
+    private fun extractOptions(text: String): List<String> =
+        OPTIONS_REGEX.find(text)?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
+
+    private fun buildPromptWithoutAnswers(sourceText: String): String =
+        sourceText.replace(OPTIONS_REGEX, "").replace("\\s+".toRegex(), " ").trim()
+
+    private fun buildPromptWithAnswers(sourceText: String): String {
+        var prompt = sourceText.replace(OPTIONS_REGEX, "").replace("\\s+".toRegex(), " ").trim()
+        prompt = if (prompt.contains("___") || prompt.contains("____")) {
+            prompt.replace(ANSWER_REGEX, "").replace("\\s+".toRegex(), " ").trim()
+        } else {
+            prompt.replace(ANSWER_REGEX, "___").trim()
+        }
+        return prompt
+    }
+
+    companion object {
+        private val ANSWER_REGEX = "\\[(.*?)]".toRegex()
+        private val OPTIONS_REGEX = "\\{+([^{}]*?)}".toRegex()
     }
 
     fun validateAnswer(request: com.practice.dto.ValidateAnswerRequest): Boolean {
