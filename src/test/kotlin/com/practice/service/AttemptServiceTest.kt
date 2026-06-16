@@ -274,4 +274,84 @@ class AttemptServiceTest : IntegrationTestBase() {
         assertEquals(2, updatedAttempt.answeredQuestions)
         assertEquals(1, updatedAttempt.correctAnswers)
     }
+
+    @Test
+    fun `getAttemptsByExerciseSetId should return only best attempt for each student`() {
+        // Given
+        val exerciseSet = exerciseSetRepository.save(ExerciseSet(
+            title = "Test Set",
+            type = ExerciseType.FILL_GAP_TEXT,
+            questions = emptyList()
+        ))
+        val exerciseSetId = exerciseSet.id!!
+
+        // Student 1 has two attempts: 5 and 8 correct answers
+        attemptRepository.save(Attempt(
+            exerciseSetId = exerciseSetId,
+            studentName = "Student 1",
+            correctAnswers = 5,
+            totalQuestions = 10
+        ))
+        attemptRepository.save(Attempt(
+            exerciseSetId = exerciseSetId,
+            studentName = "Student 1",
+            correctAnswers = 8,
+            totalQuestions = 10
+        ))
+
+        // Student 2 has one attempt: 7 correct answers
+        attemptRepository.save(Attempt(
+            exerciseSetId = exerciseSetId,
+            studentName = "Student 2",
+            correctAnswers = 7,
+            totalQuestions = 10
+        ))
+
+        // When
+        val attempts = attemptService.getAttemptsByExerciseSetId(exerciseSetId)
+
+        // Then
+        assertEquals(2, attempts.size)
+        val student1Attempt = attempts.find { it.studentName == "Student 1" }
+        val student2Attempt = attempts.find { it.studentName == "Student 2" }
+
+        assertEquals(8, student1Attempt?.correctAnswers)
+        assertEquals(7, student2Attempt?.correctAnswers)
+        assertNotNull(student1Attempt?.createdAt)
+        assertNotNull(student2Attempt?.createdAt)
+    }
+
+    @Test
+    fun `getAttemptsByExerciseSetId should return the latest best attempt when scores are equal`() {
+        // Given
+        val exerciseSet = exerciseSetRepository.save(ExerciseSet(
+            title = "Tie Break Set",
+            type = ExerciseType.FILL_GAP_TEXT,
+            questions = emptyList()
+        ))
+        val exerciseSetId = exerciseSet.id!!
+
+        val attempt1 = attemptRepository.save(Attempt(
+            exerciseSetId = exerciseSetId,
+            studentName = "Student 1",
+            correctAnswers = 8,
+            totalQuestions = 10
+        ))
+        
+        Thread.sleep(100) // Ensure different createdAt
+
+        val attempt2 = attemptRepository.save(Attempt(
+            exerciseSetId = exerciseSetId,
+            studentName = "Student 1",
+            correctAnswers = 8,
+            totalQuestions = 10
+        ))
+
+        // When
+        val attempts = attemptService.getAttemptsByExerciseSetId(exerciseSetId)
+
+        // Then
+        assertEquals(1, attempts.size)
+        assertEquals(attempt2.id, attempts[0].id)
+    }
 }

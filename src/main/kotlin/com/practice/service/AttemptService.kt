@@ -91,6 +91,13 @@ class AttemptService(
     @Transactional(readOnly = true)
     fun getAttemptsByExerciseSetId(exerciseSetId: UUID): List<AttemptResponse> {
         return attemptRepository.findAllByExerciseSetId(exerciseSetId)
+            .groupBy { it.studentName }
+            .mapNotNull { (_, attempts) ->
+                attempts.maxWithOrNull(
+                    compareBy<Attempt> { it.correctAnswers ?: 0 }
+                        .thenBy { it.createdAt }
+                )
+            }
             .map { it.toResponse() }
     }
 
@@ -100,7 +107,8 @@ class AttemptService(
         studentName = this.studentName,
         totalQuestions = this.totalQuestions,
         answeredQuestions = this.answeredQuestions,
-        correctAnswers = this.correctAnswers
+        correctAnswers = this.correctAnswers,
+        createdAt = this.createdAt
     )
 
 }
