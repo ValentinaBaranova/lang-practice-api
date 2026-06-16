@@ -95,6 +95,44 @@ class ExerciseSetService(
     }
 
     internal fun parseBulkInput(bulkInput: String, type: ExerciseType, throwOnError: Boolean = true): List<ExerciseQuestion> {
+        // Special handling for multiline fill-the-gap: treat whole input as a single question with multiple gaps
+        if (type == ExerciseType.FILL_GAP_TEXT_MULTILINE) {
+            val sourceText = bulkInput.trim()
+
+            val answerRegex = "\\[(.*?)]".toRegex()
+            val optionsRegex = "\\{+([^{}]*?)}".toRegex()
+
+            val answerMatches = answerRegex.findAll(sourceText).toList()
+            val optionsMatch = optionsRegex.find(sourceText)
+            val rawOptions = optionsMatch?.groupValues?.get(1)?.split("|")?.map { it.trim() } ?: emptyList()
+
+            if (answerMatches.isEmpty()) {
+                if (throwOnError) throw IllegalArgumentException("Multiline exercise must contain at least one answer in []")
+                return emptyList()
+            }
+            if (rawOptions.isNotEmpty() && throwOnError) {
+                // Options are not supported for multiline mode
+                throw IllegalArgumentException("Multiline exercise does not support options {}: $sourceText")
+            }
+
+            val gaps = answerMatches.mapIndexed { matchIndex, matchResult ->
+                Gap(index = matchIndex, correctAnswer = matchResult.groupValues[1])
+            }
+
+            // Build prompt: preserve new lines, remove options, replace each [answer] with ___
+            var prompt = sourceText.replace(optionsRegex, "")
+            prompt = prompt.replace(answerRegex, "___")
+
+            val question = ExerciseQuestion(
+                id = java.util.UUID.randomUUID(),
+                prompt = prompt,
+                sourceText = sourceText,
+                options = emptyList(),
+                gaps = gaps
+            )
+            return listOf(question)
+        }
+
         val errors = mutableListOf<String>()
         val questions = bulkInput.lineSequence()
             .filter { it.isNotBlank() }

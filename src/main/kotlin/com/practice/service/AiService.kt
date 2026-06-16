@@ -25,20 +25,29 @@ open class AiService(
     companion object {
 
         private const val BASE_PROMPT = """
-            Generate [AMOUNT] sentences in Argentine Spanish about topic "[TOPIC]" for [PRACTICE_TYPE].            
-            Plain text, no empty lines. One sentence per line. Do not include line numbers.
+            Generate [AMOUNT] sentences in Argentine Spanish about topic "[TOPIC]" for [PRACTICE_TYPE].                        
             [FORMAT_INSTRUCTIONS]
             If the answer requires a reflexive or object pronoun, include it in the hint.
             Focus on common everyday situations and Argentine vocabulary.
         """
 
         private const val FILL_GAP_INSTRUCTIONS = """
+            Plain text, no empty lines. One sentence per line. Do not include line numbers.
             Put only the element of topic being practiced inside square brackets.
             Use the format: Sentence with [answer] (infinitive_verb_or_hint). 
             Example: Mañana [iremos] (nosotros, ir) al cine.
         """
 
+        private const val FILL_GAP_MULTILINE_INSTRUCTIONS = """
+            Make it as a story. You may include multiple gaps across the passage.
+            Put only the elements being practiced inside square brackets.            
+            Use the format: Sentence with [answer] (infinitive_verb_or_hint).
+            Example:
+            Hoy [estamos] (nosotros, estar) muy cansados. Mañana [iremos] (nosotros, ir) a la plaza.
+        """
+
         private const val MULTIPLE_CHOICE_INSTRUCTIONS = """
+            Plain text, no empty lines. One sentence per line. Do not include line numbers.
             Put only the element of topic being practiced inside square brackets.
             Use the format: Sentence with [correct answer] {option1|option2|option3}. 
             Example: No [hables] {hablas|hables|hablar} tan rápido.
@@ -72,7 +81,7 @@ open class AiService(
             teacherRepository.save(teacher)
         }
 
-        val verificationAmount = amount * 2
+        val verificationAmount = if (type == ExerciseType.FILL_GAP_TEXT_MULTILINE) amount else amount * 2
         val generateExercisesPrompt = buildGenerateQuestionsPrompt(type, topic, verificationAmount)
 
         return try {
@@ -82,8 +91,13 @@ open class AiService(
                 return AiGenerateResponse("ERROR: AI generated an empty response. Please try again or check your topic.")
             }
 
-            val resultSentences = validateExercises(generatedExercises, type, topic, amount)
-            val content = resultSentences.joinToString("\n")
+            val content = if (type == ExerciseType.FILL_GAP_TEXT_MULTILINE) {
+                // For multiline exercises we expect a single passage; skip per-line validation
+                generatedExercises.trim()
+            } else {
+                val resultSentences = validateExercises(generatedExercises, type, topic, amount)
+                resultSentences.joinToString("\n")
+            }
             val questions = exerciseSetService.parseBulkInput(content, type, throwOnError = false)
                 .map { it.toDto() }
 
@@ -139,21 +153,21 @@ open class AiService(
     }
 
     fun buildGenerateQuestionsPrompt(type: ExerciseType, topic: String?, amount: Int): String {
-        val practiceType = if (type == ExerciseType.MULTIPLE_CHOICE) {
-            "multiple choice practice"
-        } else {
-            "language practice where students fill in the blanks"
+        val resolvedTopic = topic.takeIf { !it.isNullOrBlank() } ?: "preterito indefinido"
+        val practiceType = when (type) {
+            ExerciseType.MULTIPLE_CHOICE -> "multiple choice practice"
+            else -> "language practice where students fill in the blanks"
         }
 
-        val instructions = if (type == ExerciseType.MULTIPLE_CHOICE) {
-            MULTIPLE_CHOICE_INSTRUCTIONS
-        } else {
-            FILL_GAP_INSTRUCTIONS
+        val instructions = when (type) {
+            ExerciseType.MULTIPLE_CHOICE -> MULTIPLE_CHOICE_INSTRUCTIONS
+            ExerciseType.FILL_GAP_TEXT_MULTILINE -> FILL_GAP_MULTILINE_INSTRUCTIONS
+            else -> FILL_GAP_INSTRUCTIONS
         }
 
         return BASE_PROMPT.trimIndent()
             .replace("[AMOUNT]", amount.toString())
-            .replace("[TOPIC]", topic.takeIf { !it.isNullOrBlank() } ?: "preterito indefinido")
+            .replace("[TOPIC]", resolvedTopic)
             .replace("[PRACTICE_TYPE]", practiceType)
             .replace("[FORMAT_INSTRUCTIONS]", instructions.trimIndent().trimEnd())
     }
