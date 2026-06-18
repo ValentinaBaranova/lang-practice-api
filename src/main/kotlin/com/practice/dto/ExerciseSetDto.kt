@@ -3,6 +3,7 @@ package com.practice.dto
 import com.practice.domain.ExerciseType
 import com.practice.domain.ExerciseVisibility
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -60,10 +61,12 @@ data class ValidateAnswerRequest(
     @field:NotNull(message = "Question is required")
     val question: ExerciseQuestion,
 
-    @field:NotBlank(message = "Answer is required")
-    val answer: String
+    @field:NotNull(message = "Answers are required")
+    @field:NotEmpty(message = "Answers cannot be empty")
+    val answers: List<GapAnswerRequest>
 )
 
 data class ValidateAnswerResponse(
-    val isCorrect: Boolean
+    val isCorrect: Boolean,
+    val gapResults: List<GapAnswerResponse>? = null
 )

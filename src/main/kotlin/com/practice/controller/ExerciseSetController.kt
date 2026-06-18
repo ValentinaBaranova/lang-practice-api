@@ -38,7 +38,7 @@ class ExerciseSetController(
 
     @PostMapping("/validate-answer")
     fun validateAnswer(@Valid @RequestBody request: ValidateAnswerRequest): ValidateAnswerResponse {
-        return ValidateAnswerResponse(exerciseSetService.validateAnswer(request))
+        return exerciseSetService.validateAnswer(request)
     }
 
     @GetMapping("/{id}")

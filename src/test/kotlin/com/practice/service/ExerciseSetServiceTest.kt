@@ -5,6 +5,10 @@ import com.practice.domain.ExerciseType
 import com.practice.dto.ExerciseSetCreateRequest
 import com.practice.repository.ExerciseSetRepository
 import com.practice.repository.TeacherRepository
+import com.practice.dto.GapDto
+import com.practice.dto.GapAnswerRequest
+import com.practice.dto.ValidateAnswerRequest
+import com.practice.dto.ExerciseQuestion as ExerciseQuestionDto
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
@@ -181,6 +185,63 @@ class ExerciseSetServiceTest {
 
         assertThat(question.gaps[0].correctAnswer).isEqualTo("answer")
         assertThat(question.options).containsExactly("option1", "answer", "option3")
+    }
+
+    @Test
+    fun `test validateAnswer with answers list`() {
+        val questionDto = ExerciseQuestionDto(
+            id = UUID.randomUUID(),
+            prompt = "Yo ___ español.",
+            sourceText = "Yo [hablo] español.",
+            gaps = listOf(GapDto(0, "hablo"))
+        )
+        val request = ValidateAnswerRequest(
+            question = questionDto,
+            answers = listOf(GapAnswerRequest(0, "hablo"))
+        )
+
+        val response = exerciseSetService.validateAnswer(request)
+        assertThat(response.isCorrect).isTrue()
+        assertThat(response.gapResults).hasSize(1)
+        assertThat(response.gapResults!![0].isCorrect).isTrue()
+    }
+
+    @Test
+    fun `test validateAnswer with single answer`() {
+        val questionDto = ExerciseQuestionDto(
+            id = UUID.randomUUID(),
+            prompt = "Yo ___ español.",
+            sourceText = "Yo [hablo] español.",
+            gaps = listOf(GapDto(0, "hablo"))
+        )
+        val request = ValidateAnswerRequest(
+            question = questionDto,
+            answers = listOf(GapAnswerRequest(0, "hablo"))
+        )
+
+        assertThat(exerciseSetService.validateAnswer(request).isCorrect).isTrue()
+    }
+
+    @Test
+    fun `test validateAnswer with multiple gaps`() {
+        val questionDto = ExerciseQuestionDto(
+            id = UUID.randomUUID(),
+            prompt = "Yo [hablo] español. Vos [estudias] español.",
+            sourceText = "Yo [hablo] español. Vos [estudias] español.",
+            gaps = listOf(GapDto(0, "hablo"), GapDto(1, "estudias"))
+        )
+        val request = ValidateAnswerRequest(
+            question = questionDto,
+            answers = listOf(
+                GapAnswerRequest(0, "hablo"),
+                GapAnswerRequest(1, "estudias")
+            )
+        )
+
+        val response = exerciseSetService.validateAnswer(request)
+        assertThat(response.isCorrect).isTrue()
+        assertThat(response.gapResults).hasSize(2)
+        assertThat(response.gapResults!!.all { it.isCorrect }).isTrue()
     }
 
     private fun setupMockSave() {

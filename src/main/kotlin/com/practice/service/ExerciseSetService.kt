@@ -231,8 +231,24 @@ class ExerciseSetService(
         private val OPTIONS_REGEX = "\\{+([^{}]*?)}".toRegex()
     }
 
-    fun validateAnswer(request: com.practice.dto.ValidateAnswerRequest): Boolean {
-        return isAnswerCorrect(request.question.toDomain(), request.answer)
+    fun validateAnswer(request: com.practice.dto.ValidateAnswerRequest): com.practice.dto.ValidateAnswerResponse {
+        val question = request.question.toDomain()
+        val gapResults = request.answers.map { answerReq ->
+            val gap = question.gaps.singleOrNull() ?: question.gaps.find { it.index == answerReq.index }
+            val expectedAnswer = gap?.correctAnswer
+            val isCorrect = isAnswerCorrect(question, answerReq.answer, answerReq.index)
+
+            com.practice.dto.GapAnswerResponse(
+                index = answerReq.index,
+                answer = answerReq.answer,
+                isCorrect = isCorrect,
+                expectedAnswer = expectedAnswer
+            )
+        }
+        return com.practice.dto.ValidateAnswerResponse(
+            isCorrect = gapResults.all { it.isCorrect },
+            gapResults = gapResults
+        )
     }
 
     fun isAnswerCorrect(question: ExerciseQuestion, answer: String, gapIndex: Int? = null): Boolean {
