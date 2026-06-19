@@ -246,7 +246,6 @@ class ExerciseSetService(
             )
         }
         return com.practice.dto.ValidateAnswerResponse(
-            isCorrect = gapResults.all { it.isCorrect },
             gapResults = gapResults
         )
     }

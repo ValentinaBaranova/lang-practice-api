@@ -201,7 +201,7 @@ class ExerciseSetServiceTest {
         )
 
         val response = exerciseSetService.validateAnswer(request)
-        assertThat(response.isCorrect).isTrue()
+        assertThat(response.gapResults?.all { it.isCorrect }).isTrue()
         assertThat(response.gapResults).hasSize(1)
         assertThat(response.gapResults!![0].isCorrect).isTrue()
     }
@@ -219,7 +219,7 @@ class ExerciseSetServiceTest {
             answers = listOf(GapAnswerRequest(0, "hablo"))
         )
 
-        assertThat(exerciseSetService.validateAnswer(request).isCorrect).isTrue()
+        assertThat(exerciseSetService.validateAnswer(request).gapResults?.all { it.isCorrect }).isTrue()
     }
 
     @Test
@@ -239,7 +239,7 @@ class ExerciseSetServiceTest {
         )
 
         val response = exerciseSetService.validateAnswer(request)
-        assertThat(response.isCorrect).isTrue()
+        assertThat(response.gapResults?.all { it.isCorrect }).isTrue()
         assertThat(response.gapResults).hasSize(2)
         assertThat(response.gapResults!!.all { it.isCorrect }).isTrue()
     }

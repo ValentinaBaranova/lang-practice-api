@@ -67,6 +67,5 @@ data class ValidateAnswerRequest(
 )
 
 data class ValidateAnswerResponse(
-    val isCorrect: Boolean,
     val gapResults: List<GapAnswerResponse>? = null
 )
