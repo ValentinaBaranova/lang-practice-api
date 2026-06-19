@@ -85,27 +85,54 @@ open class AiService(
         val verificationAmount = if (type == ExerciseType.FILL_GAP_TEXT_MULTILINE) amount else amount * 2
         val generateExercisesPrompt = buildGenerateQuestionsPrompt(type, topic, verificationAmount)
 
-        return try {
-            val response = chatModel.call(Prompt(generateExercisesPrompt))
-            val generatedExercises = response.result?.output?.text
-            if (generatedExercises.isNullOrBlank()) {
-                return AiGenerateResponse("ERROR: AI generated an empty response. Please try again or check your topic.")
+        // For multiline exercises: single attempt (no per-line validation)
+        if (type == ExerciseType.FILL_GAP_TEXT_MULTILINE) {
+            return try {
+                val response = chatModel.call(Prompt(generateExercisesPrompt))
+                val generatedExercises = response.result?.output?.text
+                if (generatedExercises.isNullOrBlank()) {
+                    return AiGenerateResponse("ERROR: AI generated an empty response. Please try again or check your topic.")
+                }
+                val content = generatedExercises.trim()
+                val questions = exerciseSetService.parseBulkInput(content, type, throwOnError = false)
+                    .map { it.toDto() }
+                AiGenerateResponse(content, questions)
+            } catch (e: Exception) {
+                AiGenerateResponse("ERROR: AI generation failed: ${e.message}")
             }
-
-            val content = if (type == ExerciseType.FILL_GAP_TEXT_MULTILINE) {
-                // For multiline exercises we expect a single passage; skip per-line validation
-                generatedExercises.trim()
-            } else {
-                val resultSentences = validateExercises(generatedExercises, type, topic, amount)
-                resultSentences.joinToString("\n")
-            }
-            val questions = exerciseSetService.parseBulkInput(content, type, throwOnError = false)
-                .map { it.toDto() }
-
-            AiGenerateResponse(content, questions)
-        } catch (e: Exception) {
-            AiGenerateResponse("ERROR: AI generation failed: ${e.message}")
         }
+
+        // For single-line exercises: retry up to 2 more times if not enough valid questions
+        val maxAttempts = 3
+        for (attempt in 1..maxAttempts) {
+            try {
+                val response = chatModel.call(Prompt(generateExercisesPrompt))
+                val generatedExercises = response.result?.output?.text
+                if (generatedExercises.isNullOrBlank()) {
+                    logger.warning("AI returned empty response on attempt $attempt/$maxAttempts for topic '$topic'. Retrying...")
+                    if (attempt == maxAttempts) {
+                        return AiGenerateResponse("ERROR: AI generated an empty response. Please try again or check your topic.")
+                    }
+                    continue
+                }
+
+                val resultSentences = validateExercises(generatedExercises, type, topic, amount)
+                val content = resultSentences.joinToString("\n")
+                val questions = exerciseSetService.parseBulkInput(content, type, throwOnError = false)
+                    .map { it.toDto() }
+
+                return AiGenerateResponse(content, questions)
+            } catch (e: Exception) {
+                logger.warning("Attempt $attempt/$maxAttempts failed to generate enough valid questions for topic '$topic': ${e.message}")
+                if (attempt == maxAttempts) {
+                    return AiGenerateResponse("ERROR: AI generation failed: ${e.message}")
+                }
+                // else continue to next attempt
+            }
+        }
+
+        // Should not reach here
+        return AiGenerateResponse("ERROR: AI generation failed due to an unknown error.")
     }
 
     private fun validateExercises(
